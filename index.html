@@ -15,7 +15,6 @@
 
     h1, h2, h3 { margin-top: 0; font-weight: 600; }
 
-    /* HEADER */
     .scp-header {
       background: #1a1a1a;
       border: 2px solid #444;
@@ -40,7 +39,6 @@
       margin-left: auto;
     }
 
-    /* ADMIN BANNER */
     #adminBanner {
       display: none;
       background: #8b0000;
@@ -53,80 +51,79 @@
       border-radius: 6px;
     }
 
-    /* TABS */
     .tabbar {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
+      display:flex;
+      gap:10px;
+      margin-bottom:20px;
     }
     .tab {
-      padding: 10px 18px;
-      background: #222;
-      border: 1px solid #444;
-      border-radius: 8px;
-      cursor: pointer;
-      color: #ccc;
-      transition: 0.15s;
+      padding:10px 18px;
+      background:#222;
+      border:1px solid #444;
+      border-radius:8px;
+      cursor:pointer;
+      color:#ccc;
+      transition:0.15s;
     }
-    .tab.active { background: #3498db; color: #fff; }
+    .tab.active { background:#3498db; color:#fff; }
 
-    .page { display: none; }
-    .page.active { display: block; }
+    .page { display:none; }
+    .page.active { display:block; }
 
     .box {
-      background: #1a1a1a;
-      border: 1px solid #333;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 20px;
+      background:#1a1a1a;
+      border:1px solid #333;
+      padding:15px;
+      border-radius:8px;
+      margin-bottom:20px;
     }
 
     input, textarea {
-      width: 100%;
-      padding: 7px;
-      margin: 5px 0;
-      background: #222;
-      color: #eee;
-      border: 1px solid #444;
-      border-radius: 4px;
+      width:100%;
+      padding:7px;
+      margin:5px 0;
+      background:#222;
+      color:#eee;
+      border:1px solid #444;
+      border-radius:4px;
     }
 
     button {
-      padding: 9px;
-      width: 100%;
-      margin-top: 8px;
-      background: #3498db;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      color: white;
-      font-size: 15px;
+      padding:9px;
+      width:100%;
+      margin-top:8px;
+      background:#3498db;
+      border:none;
+      border-radius:6px;
+      cursor:pointer;
+      color:white;
+      font-size:15px;
     }
-    button.red { background: #c0392b; }
-    button.yellow { background: #d4ac0d; color: #000; }
+    button.red { background:#c0392b; }
+    button.yellow { background:#d4ac0d; color:#000; }
 
     .row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 6px 0;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:6px 0;
     }
 
     .search-result {
-      padding: 8px;
-      border-bottom: 1px solid #333;
-      cursor: pointer;
-      background: #111;
+      padding:8px;
+      border-bottom:1px solid #333;
+      cursor:pointer;
+      background:#111;
     }
     .search-result:hover {
-      background: #1e1e1e;
+      background:#1e1e1e;
     }
+
   </style>
 </head>
 
 <body>
 
-<!-- HEADER -->
 <div class="scp-header">
   <div class="scp-logo"></div>
   <div>
@@ -138,7 +135,6 @@
 
 <div id="adminBanner">⚠ ADMIN MODE ACTIVE — Editing Enabled</div>
 
-<!-- TABS -->
 <div class="tabbar">
   <div class="tab active" onclick="showPage('chems', this)">Chemicals</div>
   <div class="tab" onclick="showPage('builder', this)">Create Recipe</div>
@@ -147,7 +143,6 @@
   <div class="tab" onclick="showPage('profit', this)">Profit</div>
 </div>
 
-<!-- PAGES -->
 <div id="chems" class="page active"></div>
 <div id="builder" class="page"></div>
 <div id="recipes" class="page"></div>
@@ -156,9 +151,9 @@
 
 <script>
 
-/* ============================================================
-   ADMIN MODE
-============================================================ */
+/* ------------------------------- */
+/*   ADMIN MODE (CTRL+SHIFT+A)     */
+/* ------------------------------- */
 let ADMIN = false;
 
 document.addEventListener("keydown", e => {
@@ -169,9 +164,9 @@ document.addEventListener("keydown", e => {
   }
 });
 
-/* ============================================================
-   PERMANENT CHEMICAL LIST (GLOBAL — CANNOT BE EDITED)
-============================================================ */
+/* ------------------------------- */
+/*   PERMANENT CHEMICAL LIST       */
+/* ------------------------------- */
 const permanentChemicals = {
   "static fluid": 1000,
   "scp-008-2 blood": 15000,
@@ -220,94 +215,116 @@ const permanentChemicals = {
   "sulfur": 500
 };
 
-/* ============================================================
-   ADMIN-ADDED CHEMICALS + RECIPES (LOCALSTORAGE)
-============================================================ */
-let extraChemicals = JSON.parse(localStorage.getItem("extraChems") || "{}");
-let savedRecipes = JSON.parse(localStorage.getItem("savedRecipes") || "{}");
+/* ------------------------------- */
+/*   PERMANENT RECIPES (EMPTY)     */
+/* ------------------------------- */
+let permanentRecipes = {
 
-function saveAll() {
-  if (ADMIN) {
-    localStorage.setItem("extraChems", JSON.stringify(extraChemicals));
-    localStorage.setItem("savedRecipes", JSON.stringify(savedRecipes));
+};
+
+/* ------------------------------- */
+/*   ADMIN LOCAL RECIPES           */
+/* ------------------------------- */
+let adminRecipes = JSON.parse(localStorage.getItem("adminRecipes") || "{}");
+
+/* ------------------------------- */
+/*   EXPORT / IMPORT (ADMIN ONLY)  */
+/* ------------------------------- */
+function exportAll() {
+  const data = {
+    permanent: permanentRecipes,
+    admin: adminRecipes
+  };
+  alert("Copied to clipboard!");
+  navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+}
+
+function importAll() {
+  const raw = prompt("Paste exported JSON:");
+  if (!raw) return;
+  try {
+    const obj = JSON.parse(raw);
+
+    permanentRecipes = obj.permanent || {};
+    adminRecipes = obj.admin || {};
+
+    localStorage.setItem("adminRecipes", JSON.stringify(adminRecipes));
+    refreshAll();
+  } catch {
+    alert("Invalid JSON.");
   }
 }
 
-/* ============================================================
-   MERGED ITEM LIST (CHEMS + RECIPES)
-============================================================ */
+/* ------------------------------- */
+/*   UTIL: MERGED ITEM LIST        */
+/* ------------------------------- */
 function getAllItems() {
-  let all = {};
-
+  const out = {};
+  
   for (let k in permanentChemicals)
-    all[k] = { type: "chem", price: permanentChemicals[k] };
+    out[k] = { type: "chem", price: permanentChemicals[k] };
 
-  for (let k in extraChemicals)
-    all[k] = { type: "chem", price: extraChemicals[k] };
+  for (let k in permanentRecipes)
+    out[k] = { type: "recipe", price: computeCostPerLiter(k) };
 
-  for (let k in savedRecipes)
-    all[k] = { type: "recipe", price: computeCostPerLiter(k) };
+  for (let k in adminRecipes)
+    out[k] = { type: "recipe", price: computeCostPerLiter(k) };
 
-  return all;
+  return out;
 }
 
-/* ============================================================
-   RECIPE ENGINE (RECURSIVE)
-============================================================ */
+/* ------------------------------- */
+/*   RECURSIVE COST ENGINE         */
+/* ------------------------------- */
 function expandRecipe(name, batches = 1) {
-  const rec = savedRecipes[name];
+  const rec = permanentRecipes[name] || adminRecipes[name];
   if (!rec) return { outputLiters: 0, totalCost: 0 };
 
-  let inputLiters = 0;
-  let totalCost = 0;
+  let input = 0;
+  let cost = 0;
 
   for (let ing of rec.ingredients) {
     const need = ing.liters * batches;
 
-    if (savedRecipes[ing.name]) {
+    if (permanentRecipes[ing.name] || adminRecipes[ing.name]) {
       const sub = expandRecipe(ing.name, need);
-      inputLiters += sub.outputLiters;
-      totalCost += sub.totalCost;
+      input += sub.outputLiters;
+      cost += sub.totalCost;
     } else {
-      const price = permanentChemicals[ing.name] ??
-                    extraChemicals[ing.name] ?? 0;
-      inputLiters += need;
-      totalCost += need * price;
+      const p = permanentChemicals[ing.name] ?? 0;
+      input += need;
+      cost += need * p;
     }
   }
 
-  const output = inputLiters * (rec.yield / 100);
-
-  return {
-    outputLiters: output,
-    totalCost
-  };
+  const out = input * (rec.yield / 100);
+  return { outputLiters: out, totalCost: cost };
 }
 
 function computeCostPerLiter(name) {
-  const d = expandRecipe(name, 1);
-  return d.outputLiters ? d.totalCost / d.outputLiters : 0;
+  const data = expandRecipe(name, 1);
+  return data.outputLiters ? data.totalCost / data.outputLiters : 0;
 }
 
-/* ============================================================
-   BATCH ENGINE
-============================================================ */
-function needInputs(recipeName, desiredOut) {
-  const rec = savedRecipes[recipeName];
+/* ------------------------------- */
+/*   BATCH CALC ENGINE             */
+/* ------------------------------- */
+function needInputs(recipe, desired) {
+  const rec = permanentRecipes[recipe] || adminRecipes[recipe];
   if (!rec) return {};
 
-  const inputRequired = desiredOut / (rec.yield / 100);
+  const needInput = desired / (rec.yield / 100);
   let totals = {};
 
   rec.ingredients.forEach(ing => {
-    const need = ing.liters * inputRequired;
+    const required = ing.liters * needInput;
 
-    if (savedRecipes[ing.name]) {
-      const deep = needInputs(ing.name, need);
+    if (permanentRecipes[ing.name] || adminRecipes[ing.name]) {
+      const deep = needInputs(ing.name, required);
       for (let k in deep)
-        totals[k] = (totals[k] || 0) + deep[k];
+        totals[k] = (totals[k]||0) + deep[k];
     } else {
-      totals[ing.name] = (totals[ing.name] || 0) + need;
+      totals[ing.name] = (totals[ing.name]||0) + required;
     }
   });
 
@@ -315,99 +332,62 @@ function needInputs(recipeName, desiredOut) {
 }
 
 function maxBatchesFromSupply(recipeName, supply) {
-  const rec = savedRecipes[recipeName];
+  const rec = permanentRecipes[recipeName] || adminRecipes[recipeName];
   if (!rec) return 0;
 
   let max = Infinity;
 
   rec.ingredients.forEach(ing => {
-    const available = supply[ing.name] || 0;
+    const avail = supply[ing.name] || 0;
     if (ing.liters > 0)
-      max = Math.min(max, available / ing.liters);
+      max = Math.min(max, avail / ing.liters);
   });
 
   return max === Infinity ? 0 : max;
 }
 
-/* ============================================================
-   PAGE: CHEMICALS
-============================================================ */
+/* ------------------------------- */
+/*   PAGE SWITCHING                */
+/* ------------------------------- */
+function showPage(id, tab) {
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  tab.classList.add("active");
+}
+
+/* ------------------------------- */
+/*   PAGE: CHEMICALS               */
+/* ------------------------------- */
 document.getElementById("chems").innerHTML = `
   <h2>Chemicals</h2>
-
   <div class="box">
     <h3>Permanent Chemicals</h3>
-    <div id="permChemList"></div>
-  </div>
-
-  <div class="box">
-    <h3>Admin Chemicals</h3>
-    <div id="extraChemList"></div>
-    <div id="adminChemAdd"></div>
+    <div id="permList"></div>
   </div>
 `;
 
 function refreshChemicalsPage() {
-  const permBox = document.getElementById("permChemList");
-  const extraBox = document.getElementById("extraChemList");
-  const adminAdd = document.getElementById("adminChemAdd");
-
-  permBox.innerHTML = Object.keys(permanentChemicals)
+  permList.innerHTML = Object.keys(permanentChemicals)
     .sort()
-    .map(n => `
-      <div class="row">
-        <b>${n}</b> <span>$${permanentChemicals[n]}</span>
-      </div>
+    .map(k => `
+      <div class="row"><b>${k}</b> <span>$${permanentChemicals[k]}</span></div>
     `).join("");
-
-  extraBox.innerHTML = Object.keys(extraChemicals).length ? 
-    Object.keys(extraChemicals)
-      .sort()
-      .map(n => `
-        <div class="row">
-          <b>${n}</b> <span>$${extraChemicals[n]}</span>
-          ${ADMIN ? `<button class="red" onclick="deleteExtraChem('${n}')">Del</button>` : ""}
-        </div>
-      `).join("") :
-    "<i>No admin-added chemicals.</i>";
-
-  adminAdd.innerHTML = ADMIN ? `
-    <h4>Add Chemical</h4>
-    <input id="newChemName" placeholder="Name">
-    <input id="newChemPrice" placeholder="Price" type="number">
-    <button onclick="addExtraChem()">Add</button>
-  ` : "";
 }
 
-function addExtraChem() {
-  const name = newChemName.value.trim().toLowerCase();
-  const price = parseFloat(newChemPrice.value);
-  if (!name || isNaN(price)) return;
-
-  extraChemicals[name] = price;
-  saveAll();
-  refreshChemicalsPage();
-}
-
-function deleteExtraChem(n) {
-  delete extraChemicals[n];
-  saveAll();
-  refreshChemicalsPage();
-}
-
-/* ============================================================
-   PAGE: RECIPE BUILDER
-============================================================ */
+/* ------------------------------- */
+/*   PAGE: RECIPE BUILDER (ONCE)   */
+/* ------------------------------- */
 document.getElementById("builder").innerHTML = `
   <h2>Create Recipe</h2>
-
   <div class="box">
     <input id="rName" placeholder="Recipe Name">
     <input id="rYield" type="number" placeholder="Yield %">
 
     <h3>Search Ingredient</h3>
-    <input id="rSearch" placeholder="Search..." oninput="refreshIngredientSearch()">
-    <div id="rResults" style="max-height:200px; overflow-y:auto;"></div>
+    <input id="rSearch" oninput="refreshIngredientSearch()" placeholder="Search...">
+    <div id="rResults" style="max-height:200px;overflow-y:auto;"></div>
 
     <h3>Ingredients</h3>
     <div id="rList"></div>
@@ -422,17 +402,14 @@ function refreshIngredientSearch() {
   const q = rSearch.value.toLowerCase();
   const all = getAllItems();
 
-  const results = Object.keys(all)
+  rResults.innerHTML = Object.keys(all)
     .filter(k => k.includes(q))
     .sort()
     .map(name => `
       <div class="search-result" onclick="addIngredient('${name}')">
-        <b>${name}</b> — $${all[name].price.toFixed(2)}/L 
-        ${all[name].type === "recipe" ? "(recipe)" : ""}
+        <b>${name}</b> — $${all[name].price.toFixed(2)}/L
       </div>
     `).join("");
-
-  rResults.innerHTML = results || "<i>No matches.</i>";
 }
 
 function addIngredient(name) {
@@ -442,14 +419,14 @@ function addIngredient(name) {
 
 function refreshIngredientList() {
   rList.innerHTML = recipeBuilder.length ?
-    recipeBuilder.map((item, i) => `
+    recipeBuilder.map((i, idx) => `
       <div class="row">
         <div style="width:70%;">
-          <b>${item.name}</b><br>
-          <input type="number" value="${item.liters}"
-                 oninput="recipeBuilder[${i}].liters=parseFloat(this.value)||0">
+          <b>${i.name}</b><br>
+          <input type="number" value="${i.liters}" 
+                 oninput="recipeBuilder[${idx}].liters=parseFloat(this.value)||0">
         </div>
-        <button class="red" onclick="removeIngredient(${i})">X</button>
+        <button class="red" onclick="removeIngredient(${idx})">X</button>
       </div>
     `).join("") :
     "<i>No ingredients.</i>";
@@ -469,54 +446,67 @@ function saveRecipe() {
   if (!name || isNaN(y) || !recipeBuilder.length)
     return alert("Missing fields.");
 
-  savedRecipes[name] = {
+  adminRecipes[name] = {
     yield: y,
     ingredients: JSON.parse(JSON.stringify(recipeBuilder))
   };
 
-  saveAll();
+  localStorage.setItem("adminRecipes", JSON.stringify(adminRecipes));
 
+  recipeBuilder = [];
   rName.value = "";
   rYield.value = "";
-  recipeBuilder = [];
+
   refreshIngredientList();
   refreshAll();
 }
 
-/* ============================================================
-   PAGE: RECIPES LIST
-============================================================ */
+/* ------------------------------- */
+/*   PAGE: RECIPES                 */
+/* ------------------------------- */
 document.getElementById("recipes").innerHTML = `
   <h2>Recipes</h2>
-  <div class="box" id="recipeList"></div>
+  <div class="box">
+    <div id="recipeList"></div>
+    <div id="adminTools"></div>
+  </div>
 `;
 
 function refreshRecipePage() {
-  const list = Object.keys(savedRecipes)
-    .sort()
-    .map(name => `
-      <div class="row">
-        <div>
-          <b>${name}</b>
-          <br>Yield: ${savedRecipes[name].yield}%
-          <br>Cost/L: $${computeCostPerLiter(name).toFixed(2)}
-        </div>
-        ${ADMIN ? `<button class="red" onclick="deleteRecipe('${name}')">Del</button>` : ""}
-      </div>
-    `).join("");
+  let keys = [
+    ...Object.keys(permanentRecipes),
+    ...Object.keys(adminRecipes)
+  ].sort();
 
-  recipeList.innerHTML = list || "<i>No recipes created.</i>";
+  recipeList.innerHTML = keys.length ? keys.map(name => `
+    <div class="row">
+      <div>
+        <b>${name}</b>
+        <br>Yield: ${(permanentRecipes[name]||adminRecipes[name]).yield}%
+        <br>Cost/L: $${computeCostPerLiter(name).toFixed(2)}
+      </div>
+      ${ADMIN ? `
+        <button class="red" onclick="deleteRecipe('${name}')">Delete</button>
+      ` : ""}
+    </div>
+  `).join("") : "<i>No recipes yet.</i>";
+
+  adminTools.innerHTML = ADMIN ? `
+    <button onclick="exportAll()">Export ALL</button>
+    <button onclick="importAll()">Import ALL</button>
+  ` : "";
 }
 
 function deleteRecipe(n) {
-  delete savedRecipes[n];
-  saveAll();
+  if (permanentRecipes[n]) delete permanentRecipes[n];
+  if (adminRecipes[n]) delete adminRecipes[n];
+  localStorage.setItem("adminRecipes", JSON.stringify(adminRecipes));
   refreshRecipePage();
 }
 
-/* ============================================================
-   PAGE: BATCH CALCULATOR
-============================================================ */
+/* ------------------------------- */
+/*   PAGE: BATCH CALC              */
+/* ------------------------------- */
 document.getElementById("batch").innerHTML = `
   <h2>Batch Calculator</h2>
 
@@ -538,39 +528,44 @@ document.getElementById("batch").innerHTML = `
 `;
 
 function refreshBatchPage() {
-  const opts =
-    `<option></option>` +
-    Object.keys(savedRecipes).sort().map(n => `<option>${n}</option>`).join("");
+  const keys = [
+    ...Object.keys(permanentRecipes),
+    ...Object.keys(adminRecipes)
+  ].sort();
+
+  const opts = `<option></option>` +
+    keys.map(k => `<option>${k}</option>`).join("");
 
   bADrop.innerHTML = opts;
   bBDrop.innerHTML = opts;
 }
 
 function calcModeA() {
-  const r = bADrop.value;
+  const name = bADrop.value;
   const out = parseFloat(bAOut.value);
-  if (!r || isNaN(out)) return bARes.innerHTML = "Invalid.";
+  if (!name || isNaN(out)) return bARes.innerHTML = "Invalid.";
 
-  const need = needInputs(r, out);
+  const need = needInputs(name, out);
   bARes.innerHTML = Object.keys(need)
     .map(k => `• ${k}: ${need[k].toFixed(2)} L`)
     .join("<br>");
 }
 
 function calcModeB() {
-  const r = bBDrop.value;
-  if (!r) return;
+  const name = bBDrop.value;
+  if (!name) return;
 
   let supply = {};
   bBIn.value.split("\n").forEach(line => {
-    let [a,b] = line.split(":").map(s=>s.trim().toLowerCase());
-    supply[a] = parseFloat(b)||0;
+    const [chem, val] = line.split(":").map(s=>s.trim().toLowerCase());
+    supply[chem] = parseFloat(val)||0;
   });
 
-  const batches = maxBatchesFromSupply(r, supply);
-  const rec = savedRecipes[r];
+  const batches = maxBatchesFromSupply(name, supply);
+  const rec = permanentRecipes[name] || adminRecipes[name];
+
   const per = rec.ingredients.reduce((a,b)=>a + b.liters,0);
-  const out = per * batches * (rec.yield / 100);
+  const out = per * batches * (rec.yield/100);
 
   bBRes.innerHTML = `
     <b>${out.toFixed(2)} L</b><br>
@@ -578,9 +573,9 @@ function calcModeB() {
   `;
 }
 
-/* ============================================================
-   PAGE: PROFIT CALCULATOR
-============================================================ */
+/* ------------------------------- */
+/*   PAGE: PROFIT CALC             */
+/* ------------------------------- */
 document.getElementById("profit").innerHTML = `
   <h2>Profit Calculator</h2>
 
@@ -593,70 +588,41 @@ document.getElementById("profit").innerHTML = `
 `;
 
 function refreshProfitPage() {
-  pDrop.innerHTML =
-    `<option></option>` +
-    Object.keys(savedRecipes)
-      .sort()
-      .map(n => `<option>${n}</option>`).join("");
+  const keys = [
+    ...Object.keys(permanentRecipes),
+    ...Object.keys(adminRecipes)
+  ].sort();
+
+  pDrop.innerHTML = `<option></option>` +
+    keys.map(k => `<option>${k}</option>`).join("");
 }
 
 function calcProfit() {
-  const r = pDrop.value;
+  const name = pDrop.value;
   const sale = parseFloat(pSale.value);
-  if (!r || isNaN(sale)) return pRes.innerHTML = "Invalid.";
+  if (!name || isNaN(sale)) return pRes.innerHTML = "Invalid.";
 
-  const cpl = computeCostPerLiter(r);
-  const profit = sale - cpl;
+  const cost = computeCostPerLiter(name);
+  const profit = sale - cost;
 
   pRes.innerHTML = `
-    <div>Cost/L: $${cpl.toFixed(2)}</div>
-    <div>Profit/L: $${profit.toFixed(2)}</div>
-    <div>Margin: ${(profit/sale*100).toFixed(1)}%</div>
+    Cost/L: $${cost.toFixed(2)}<br>
+    Profit/L: $${profit.toFixed(2)}<br>
+    Margin: ${(profit/sale*100).toFixed(1)}%
   `;
 }
 
-/* ============================================================
-   INITIALIZE
-============================================================ */
+/* ------------------------------- */
+/*   GLOBAL REFRESH                */
+/* ------------------------------- */
 function refreshAll() {
   refreshChemicalsPage();
-  refreshBuilderPage();
+  refreshIngredientSearch();
+  refreshIngredientList();
   refreshRecipePage();
   refreshBatchPage();
   refreshProfitPage();
 }
-
-function refreshBuilderPage() {
-  // Re-render Ingredient List
-  refreshIngredientList();
-
-  // Re-render Search Results when admin toggles
-  const q = document.getElementById("rSearch").value || "";
-  refreshIngredientSearch(q);
-
-  // Ensure builder UI exists
-  document.getElementById("builder").innerHTML = `
-    <h2>Create Recipe</h2>
-
-    <div class="box">
-      <input id="rName" placeholder="Recipe Name">
-      <input id="rYield" type="number" placeholder="Yield %">
-
-      <h3>Search Ingredient</h3>
-      <input id="rSearch" placeholder="Search..." oninput="refreshIngredientSearch()">
-      <div id="rResults" style="max-height:200px; overflow-y:auto;"></div>
-
-      <h3>Ingredients</h3>
-      <div id="rList"></div>
-
-      <button onclick="saveRecipe()">Save Recipe</button>
-    </div>
-  `;
-
-  refreshIngredientList();
-  refreshIngredientSearch();
-}
-
 
 refreshAll();
 
