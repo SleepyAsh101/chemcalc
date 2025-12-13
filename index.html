@@ -309,27 +309,30 @@ function computeCostPerLiter(name) {
 /* ------------------------------- */
 /*   BATCH CALC ENGINE             */
 /* ------------------------------- */
-function needInputs(recipe, desired) {
+function needInputs(recipe, desiredOutput) {
   const rec = permanentRecipes[recipe] || adminRecipes[recipe];
   if (!rec) return {};
 
-  const needInput = desired / (rec.yield / 100);
+  const totalIn = rec.ingredients.reduce((s,i)=>s+i.liters,0);
+  const scale = desiredOutput / ((rec.yield/100) * totalIn);
+
   let totals = {};
 
   rec.ingredients.forEach(ing => {
-    const required = ing.liters * needInput;
+    const required = ing.liters * scale;
 
     if (permanentRecipes[ing.name] || adminRecipes[ing.name]) {
       const deep = needInputs(ing.name, required);
       for (let k in deep)
-        totals[k] = (totals[k]||0) + deep[k];
+        totals[k] = (totals[k] || 0) + deep[k];
     } else {
-      totals[ing.name] = (totals[ing.name]||0) + required;
+      totals[ing.name] = (totals[ing.name] || 0) + required;
     }
   });
 
   return totals;
 }
+
 
 function maxBatchesFromSupply(recipeName, supply) {
   const rec = permanentRecipes[recipeName] || adminRecipes[recipeName];
