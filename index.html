@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SCP Chemistry Calculator — Site-65</title>
+  <meta charset="UTF-8" />
+
+  <style>
+    body {
+      font-family: Arial;
+      padding: 20px;
+      margin: 0;
+      background: #0c0c0c;
+      color: #eee;
+    }
+
+    h1, h2, h3 { margin-top: 0; font-weight: 600; }
+
+    /* HEADER */
+    .scp-header {
+      background: #1a1a1a;
+      border: 2px solid #444;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .scp-logo {
+      width: 60px; height: 60px;
+      background: url('https://upload.wikimedia.org/wikipedia/commons/6/6f/SCP_Foundation_%28emblem%29.svg');
+      background-size: cover;
+      filter: invert(1);
+    }
+    .scp-badge {
+      background: #b30000;
+      padding: 10px 15px;
+      font-weight: bold;
+      border-radius: 6px;
+      margin-left: auto;
+    }
+
+    /* ADMIN BANNER */
+    #adminBanner {
+      display: none;
+      background: #8b0000;
+      color: #fff;
+      padding: 12px;
+      margin-bottom: 20px;
+      border: 2px solid #ff4444;
+      text-align: center;
+      font-size: 18px;
+      border-radius: 6px;
+    }
+
+    /* TABS */
+    .tabbar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .tab {
+      padding: 10px 18px;
+      background: #222;
+      border: 1px solid #444;
+      border-radius: 8px;
+      cursor: pointer;
+      color: #ccc;
+      transition: 0.15s;
+    }
+    .tab.active { background: #3498db; color: #fff; }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .box {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 7px;
+      margin: 5px 0;
+      background: #222;
+      color: #eee;
+      border: 1px solid #444;
+      border-radius: 4px;
+    }
+
+    button {
+      padding: 9px;
+      width: 100%;
+      margin-top: 8px;
+      background: #3498db;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      color: white;
+      font-size: 15px;
+    }
+    button.red { background: #c0392b; }
+    button.yellow { background: #d4ac0d; color: #000; }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+    }
+
+    .search-result {
+      padding: 8px;
+      border-bottom: 1px solid #333;
+      cursor: pointer;
+      background: #111;
+    }
+    .search-result:hover {
+      background: #1e1e1e;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<div class="scp-header">
+  <div class="scp-logo"></div>
+  <div>
+    <div style="font-size:22px;font-weight:bold;">SCP FOUNDATION — SITE-65</div>
+    <div style="opacity:.8;">Department: Chemical Research Board</div>
+  </div>
+  <div class="scp-badge">LEVEL 3</div>
+</div>
+
+<div id="adminBanner">⚠ ADMIN MODE ACTIVE — Editing Enabled</div>
+
+<!-- TABS -->
+<div class="tabbar">
+  <div class="tab active" onclick="showPage('chems', this)">Chemicals</div>
+  <div class="tab" onclick="showPage('builder', this)">Create Recipe</div>
+  <div class="tab" onclick="showPage('recipes', this)">Recipes</div>
+  <div class="tab" onclick="showPage('batch', this)">Batch Calc</div>
+  <div class="tab" onclick="showPage('profit', this)">Profit</div>
+</div>
+
+<!-- PAGES -->
+<div id="chems" class="page active"></div>
+<div id="builder" class="page"></div>
+<div id="recipes" class="page"></div>
+<div id="batch" class="page"></div>
+<div id="profit" class="page"></div>
+
+<script>
+
+/* ============================================================
+   ADMIN MODE
+============================================================ */
+let ADMIN = false;
+
+document.addEventListener("keydown", e => {
+  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "a") {
+    ADMIN = !ADMIN;
+    document.getElementById("adminBanner").style.display = ADMIN ? "block" : "none";
+    refreshAll();
+  }
+});
+
+/* ============================================================
+   PERMANENT CHEMICAL LIST (GLOBAL — CANNOT BE EDITED)
+============================================================ */
+const permanentChemicals = {
+  "static fluid": 1000,
+  "scp-008-2 blood": 15000,
+  "scp-096 genome": 3000,
+  "scp-323 host blood": 3000,
+  "scp-457 carbon": 1000,
+  "scp-860-2 blood": 1500,
+  "scp-9000 infectious sample": 1500,
+  "scp-966 skin": 2000,
+  "o-blood": 3000,
+  "immortal flesh": 3500,
+  "interdimensional matter": 2000,
+  "crystalline blood": 2500,
+  "calcium": 750,
+  "anomalous matter": 800,
+  "amnesium": 3000,
+  "anomalous bone marrow": 3500,
+  "orange goop": 800,
+  "radioactive fluid": 1000,
+  "unstable quantum matter": 3000,
+  "decaying matter": 2500,
+
+  "water": 100,
+  "progesterone": 300,
+  "potassium": 200,
+  "propionic acid": 450,
+  "sodium chloride": 100,
+  "salicyclic acid": 450,
+  "setraline": 500,
+  "methyltestonerone": 300,
+  "duloxetine": 250,
+  "ethanol": 500,
+  "dionized water": 150,
+  "citizol-q": 2000,
+  "brodamide": 400,
+  "chlorine": 750,
+  "anhydride": 250,
+  "2-napthol": 250,
+  "acetic anhydride": 350,
+  "acetone": 500,
+
+  "amino acid": 300,
+  "amn-a103": 1500,
+  "ventanyl": 1250,
+  "betonine": 1000,
+  "sulfur": 500
+};
+
+/* ============================================================
+   ADMIN-ADDED CHEMICALS + RECIPES (LOCALSTORAGE)
+============================================================ */
+let extraChemicals = JSON.parse(localStorage.getItem("extraChems") || "{}");
+let savedRecipes = JSON.parse(localStorage.getItem("savedRecipes") || "{}");
+
+function saveAll() {
+  if (ADMIN) {
+    localStorage.setItem("extraChems", JSON.stringify(extraChemicals));
+    localStorage.setItem("savedRecipes", JSON.stringify(savedRecipes));
+  }
+}
+
+/* ============================================================
+   MERGED ITEM LIST (CHEMS + RECIPES)
+============================================================ */
+function getAllItems() {
+  let all = {};
+
+  for (let k in permanentChemicals)
+    all[k] = { type: "chem", price: permanentChemicals[k] };
+
+  for (let k in extraChemicals)
+    all[k] = { type: "chem", price: extraChemicals[k] };
+
+  for (let k in savedRecipes)
+    all[k] = { type: "recipe", price: computeCostPerLiter(k) };
+
+  return all;
+}
+
+/* ============================================================
+   RECIPE ENGINE (RECURSIVE)
+============================================================ */
+function expandRecipe(name, batches = 1) {
+  const rec = savedRecipes[name];
+  if (!rec) return { outputLiters: 0, totalCost: 0 };
+
+  let inputLiters = 0;
+  let totalCost = 0;
+
+  for (let ing of rec.ingredients) {
+    const need = ing.liters * batches;
+
+    if (savedRecipes[ing.name]) {
+      const sub = expandRecipe(ing.name, need);
+      inputLiters += sub.outputLiters;
+      totalCost += sub.totalCost;
+    } else {
+      const price = permanentChemicals[ing.name] ??
+                    extraChemicals[ing.name] ?? 0;
+      inputLiters += need;
+      totalCost += need * price;
+    }
+  }
+
+  const output = inputLiters * (rec.yield / 100);
+
+  return {
+    outputLiters: output,
+    totalCost
+  };
+}
+
+function computeCostPerLiter(name) {
+  const d = expandRecipe(name, 1);
+  return d.outputLiters ? d.totalCost / d.outputLiters : 0;
+}
+
+/* ============================================================
+   BATCH ENGINE
+============================================================ */
+function needInputs(recipeName, desiredOut) {
+  const rec = savedRecipes[recipeName];
+  if (!rec) return {};
+
+  const inputRequired = desiredOut / (rec.yield / 100);
+  let totals = {};
+
+  rec.ingredients.forEach(ing => {
+    const need = ing.liters * inputRequired;
+
+    if (savedRecipes[ing.name]) {
+      const deep = needInputs(ing.name, need);
+      for (let k in deep)
+        totals[k] = (totals[k] || 0) + deep[k];
+    } else {
+      totals[ing.name] = (totals[ing.name] || 0) + need;
+    }
+  });
+
+  return totals;
+}
+
+function maxBatchesFromSupply(recipeName, supply) {
+  const rec = savedRecipes[recipeName];
+  if (!rec) return 0;
+
+  let max = Infinity;
+
+  rec.ingredients.forEach(ing => {
+    const available = supply[ing.name] || 0;
+    if (ing.liters > 0)
+      max = Math.min(max, available / ing.liters);
+  });
+
+  return max === Infinity ? 0 : max;
+}
+
+/* ============================================================
+   PAGE: CHEMICALS
+============================================================ */
+document.getElementById("chems").innerHTML = `
+  <h2>Chemicals</h2>
+
+  <div class="box">
+    <h3>Permanent Chemicals</h3>
+    <div id="permChemList"></div>
+  </div>
+
+  <div class="box">
+    <h3>Admin Chemicals</h3>
+    <div id="extraChemList"></div>
+    <div id="adminChemAdd"></div>
+  </div>
+`;
+
+function refreshChemicalsPage() {
+  const permBox = document.getElementById("permChemList");
+  const extraBox = document.getElementById("extraChemList");
+  const adminAdd = document.getElementById("adminChemAdd");
+
+  permBox.innerHTML = Object.keys(permanentChemicals)
+    .sort()
+    .map(n => `
+      <div class="row">
+        <b>${n}</b> <span>$${permanentChemicals[n]}</span>
+      </div>
+    `).join("");
+
+  extraBox.innerHTML = Object.keys(extraChemicals).length ? 
+    Object.keys(extraChemicals)
+      .sort()
+      .map(n => `
+        <div class="row">
+          <b>${n}</b> <span>$${extraChemicals[n]}</span>
+          ${ADMIN ? `<button class="red" onclick="deleteExtraChem('${n}')">Del</button>` : ""}
+        </div>
+      `).join("") :
+    "<i>No admin-added chemicals.</i>";
+
+  adminAdd.innerHTML = ADMIN ? `
+    <h4>Add Chemical</h4>
+    <input id="newChemName" placeholder="Name">
+    <input id="newChemPrice" placeholder="Price" type="number">
+    <button onclick="addExtraChem()">Add</button>
+  ` : "";
+}
+
+function addExtraChem() {
+  const name = newChemName.value.trim().toLowerCase();
+  const price = parseFloat(newChemPrice.value);
+  if (!name || isNaN(price)) return;
+
+  extraChemicals[name] = price;
+  saveAll();
+  refreshChemicalsPage();
+}
+
+function deleteExtraChem(n) {
+  delete extraChemicals[n];
+  saveAll();
+  refreshChemicalsPage();
+}
+
+/* ============================================================
+   PAGE: RECIPE BUILDER
+============================================================ */
+document.getElementById("builder").innerHTML = `
+  <h2>Create Recipe</h2>
+
+  <div class="box">
+    <input id="rName" placeholder="Recipe Name">
+    <input id="rYield" type="number" placeholder="Yield %">
+
+    <h3>Search Ingredient</h3>
+    <input id="rSearch" placeholder="Search..." oninput="refreshIngredientSearch()">
+    <div id="rResults" style="max-height:200px; overflow-y:auto;"></div>
+
+    <h3>Ingredients</h3>
+    <div id="rList"></div>
+
+    <button onclick="saveRecipe()">Save Recipe</button>
+  </div>
+`;
+
+let recipeBuilder = [];
+
+function refreshIngredientSearch() {
+  const q = rSearch.value.toLowerCase();
+  const all = getAllItems();
+
+  const results = Object.keys(all)
+    .filter(k => k.includes(q))
+    .sort()
+    .map(name => `
+      <div class="search-result" onclick="addIngredient('${name}')">
+        <b>${name}</b> — $${all[name].price.toFixed(2)}/L 
+        ${all[name].type === "recipe" ? "(recipe)" : ""}
+      </div>
+    `).join("");
+
+  rResults.innerHTML = results || "<i>No matches.</i>";
+}
+
+function addIngredient(name) {
+  recipeBuilder.push({ name, liters: 0 });
+  refreshIngredientList();
+}
+
+function refreshIngredientList() {
+  rList.innerHTML = recipeBuilder.length ?
+    recipeBuilder.map((item, i) => `
+      <div class="row">
+        <div style="width:70%;">
+          <b>${item.name}</b><br>
+          <input type="number" value="${item.liters}"
+                 oninput="recipeBuilder[${i}].liters=parseFloat(this.value)||0">
+        </div>
+        <button class="red" onclick="removeIngredient(${i})">X</button>
+      </div>
+    `).join("") :
+    "<i>No ingredients.</i>";
+}
+
+function removeIngredient(i) {
+  recipeBuilder.splice(i, 1);
+  refreshIngredientList();
+}
+
+function saveRecipe() {
+  if (!ADMIN) return alert("Admin only.");
+
+  const name = rName.value.trim().toLowerCase();
+  const y = parseFloat(rYield.value);
+
+  if (!name || isNaN(y) || !recipeBuilder.length)
+    return alert("Missing fields.");
+
+  savedRecipes[name] = {
+    yield: y,
+    ingredients: JSON.parse(JSON.stringify(recipeBuilder))
+  };
+
+  saveAll();
+
+  rName.value = "";
+  rYield.value = "";
+  recipeBuilder = [];
+  refreshIngredientList();
+  refreshAll();
+}
+
+/* ============================================================
+   PAGE: RECIPES LIST
+============================================================ */
+document.getElementById("recipes").innerHTML = `
+  <h2>Recipes</h2>
+  <div class="box" id="recipeList"></div>
+`;
+
+function refreshRecipePage() {
+  const list = Object.keys(savedRecipes)
+    .sort()
+    .map(name => `
+      <div class="row">
+        <div>
+          <b>${name}</b>
+          <br>Yield: ${savedRecipes[name].yield}%
+          <br>Cost/L: $${computeCostPerLiter(name).toFixed(2)}
+        </div>
+        ${ADMIN ? `<button class="red" onclick="deleteRecipe('${name}')">Del</button>` : ""}
+      </div>
+    `).join("");
+
+  recipeList.innerHTML = list || "<i>No recipes created.</i>";
+}
+
+function deleteRecipe(n) {
+  delete savedRecipes[n];
+  saveAll();
+  refreshRecipePage();
+}
+
+/* ============================================================
+   PAGE: BATCH CALCULATOR
+============================================================ */
+document.getElementById("batch").innerHTML = `
+  <h2>Batch Calculator</h2>
+
+  <div class="box">
+    <h3>Mode A — Desired Output</h3>
+    <select id="bADrop"></select>
+    <input id="bAOut" type="number" placeholder="Output L">
+    <button onclick="calcModeA()">Calculate</button>
+    <div id="bARes"></div>
+  </div>
+
+  <div class="box">
+    <h3>Mode B — Based on Supply</h3>
+    <select id="bBDrop"></select>
+    <textarea id="bBIn" placeholder="chemical: liters"></textarea>
+    <button onclick="calcModeB()">Calculate</button>
+    <div id="bBRes"></div>
+  </div>
+`;
+
+function refreshBatchPage() {
+  const opts =
+    `<option></option>` +
+    Object.keys(savedRecipes).sort().map(n => `<option>${n}</option>`).join("");
+
+  bADrop.innerHTML = opts;
+  bBDrop.innerHTML = opts;
+}
+
+function calcModeA() {
+  const r = bADrop.value;
+  const out = parseFloat(bAOut.value);
+  if (!r || isNaN(out)) return bARes.innerHTML = "Invalid.";
+
+  const need = needInputs(r, out);
+  bARes.innerHTML = Object.keys(need)
+    .map(k => `• ${k}: ${need[k].toFixed(2)} L`)
+    .join("<br>");
+}
+
+function calcModeB() {
+  const r = bBDrop.value;
+  if (!r) return;
+
+  let supply = {};
+  bBIn.value.split("\n").forEach(line => {
+    let [a,b] = line.split(":").map(s=>s.trim().toLowerCase());
+    supply[a] = parseFloat(b)||0;
+  });
+
+  const batches = maxBatchesFromSupply(r, supply);
+  const rec = savedRecipes[r];
+  const per = rec.ingredients.reduce((a,b)=>a + b.liters,0);
+  const out = per * batches * (rec.yield / 100);
+
+  bBRes.innerHTML = `
+    <b>${out.toFixed(2)} L</b><br>
+    Batches: ${batches.toFixed(2)}
+  `;
+}
+
+/* ============================================================
+   PAGE: PROFIT CALCULATOR
+============================================================ */
+document.getElementById("profit").innerHTML = `
+  <h2>Profit Calculator</h2>
+
+  <div class="box">
+    <select id="pDrop"></select>
+    <input id="pSale" type="number" placeholder="Sale price per L">
+    <button onclick="calcProfit()">Calculate</button>
+    <div id="pRes"></div>
+  </div>
+`;
+
+function refreshProfitPage() {
+  pDrop.innerHTML =
+    `<option></option>` +
+    Object.keys(savedRecipes)
+      .sort()
+      .map(n => `<option>${n}</option>`).join("");
+}
+
+function calcProfit() {
+  const r = pDrop.value;
+  const sale = parseFloat(pSale.value);
+  if (!r || isNaN(sale)) return pRes.innerHTML = "Invalid.";
+
+  const cpl = computeCostPerLiter(r);
+  const profit = sale - cpl;
+
+  pRes.innerHTML = `
+    <div>Cost/L: $${cpl.toFixed(2)}</div>
+    <div>Profit/L: $${profit.toFixed(2)}</div>
+    <div>Margin: ${(profit/sale*100).toFixed(1)}%</div>
+  `;
+}
+
+/* ============================================================
+   INITIALIZE
+============================================================ */
+function refreshAll() {
+  refreshChemicalsPage();
+  refreshBuilderPage();
+  refreshRecipePage();
+  refreshBatchPage();
+  refreshProfitPage();
+}
+
+function refreshBuilderPage() {
+  // Re-render Ingredient List
+  refreshIngredientList();
+
+  // Re-render Search Results when admin toggles
+  const q = document.getElementById("rSearch").value || "";
+  refreshIngredientSearch(q);
+
+  // Ensure builder UI exists
+  document.getElementById("builder").innerHTML = `
+    <h2>Create Recipe</h2>
+
+    <div class="box">
+      <input id="rName" placeholder="Recipe Name">
+      <input id="rYield" type="number" placeholder="Yield %">
+
+      <h3>Search Ingredient</h3>
+      <input id="rSearch" placeholder="Search..." oninput="refreshIngredientSearch()">
+      <div id="rResults" style="max-height:200px; overflow-y:auto;"></div>
+
+      <h3>Ingredients</h3>
+      <div id="rList"></div>
+
+      <button onclick="saveRecipe()">Save Recipe</button>
+    </div>
+  `;
+
+  refreshIngredientList();
+  refreshIngredientSearch();
+}
+
+
+refreshAll();
+
+</script>
+
+</body>
+</html>
