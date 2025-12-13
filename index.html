@@ -276,35 +276,27 @@ function getAllItems() {
 /* ------------------------------- */
 /*   RECURSIVE COST ENGINE         */
 /* ------------------------------- */
-function expandRecipe(name, batches = 1) {
+function expandRecipe(name, runs = 1) {
   const rec = permanentRecipes[name] || adminRecipes[name];
   if (!rec) return { outputLiters: 0, totalCost: 0 };
 
-  let input = 0;
+  const totalIn = rec.ingredients.reduce((s,i)=>s+i.liters,0);
+
   let cost = 0;
 
-  for (let ing of rec.ingredients) {
-    const need = ing.liters * batches;
-
+  rec.ingredients.forEach(ing => {
     if (permanentRecipes[ing.name] || adminRecipes[ing.name]) {
-      const sub = expandRecipe(ing.name, need);
-      input += sub.outputLiters;
+      const sub = expandRecipe(ing.name, ing.liters * runs);
       cost += sub.totalCost;
     } else {
-      const p = permanentChemicals[ing.name] ?? 0;
-      input += need;
-      cost += need * p;
+      cost += ing.liters * runs * (permanentChemicals[ing.name] || 0);
     }
-  }
+  });
 
-  const out = input * (rec.yield / 100);
-  return { outputLiters: out, totalCost: cost };
+  const output = totalIn * runs * (rec.yield / 100);
+  return { outputLiters: output, totalCost: cost };
 }
 
-function computeCostPerLiter(name) {
-  const data = expandRecipe(name, 1);
-  return data.outputLiters ? data.totalCost / data.outputLiters : 0;
-}
 
 /* ------------------------------- */
 /*   BATCH CALC ENGINE             */
