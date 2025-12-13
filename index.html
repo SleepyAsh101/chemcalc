@@ -25,12 +25,15 @@
       align-items: center;
       gap: 15px;
     }
+
     .scp-logo {
-      width: 60px; height: 60px;
+      width: 60px;
+      height: 60px;
       background: url('https://upload.wikimedia.org/wikipedia/commons/6/6f/SCP_Foundation_%28emblem%29.svg');
       background-size: cover;
       filter: invert(1);
     }
+
     .scp-badge {
       background: #b30000;
       padding: 10px 15px;
@@ -56,6 +59,7 @@
       gap:10px;
       margin-bottom:20px;
     }
+
     .tab {
       padding:10px 18px;
       background:#222;
@@ -63,9 +67,12 @@
       border-radius:8px;
       cursor:pointer;
       color:#ccc;
-      transition:0.15s;
     }
-    .tab.active { background:#3498db; color:#fff; }
+
+    .tab.active {
+      background:#3498db;
+      color:#fff;
+    }
 
     .page { display:none; }
     .page.active { display:block; }
@@ -99,8 +106,8 @@
       color:white;
       font-size:15px;
     }
+
     button.red { background:#c0392b; }
-    button.yellow { background:#d4ac0d; color:#000; }
 
     .row {
       display:flex;
@@ -115,10 +122,10 @@
       cursor:pointer;
       background:#111;
     }
+
     .search-result:hover {
       background:#1e1e1e;
     }
-
   </style>
 </head>
 
@@ -150,163 +157,68 @@
 <div id="profit" class="page"></div>
 
 <script>
-
-/* ------------------------------- */
-/*   ADMIN MODE (CTRL+SHIFT+A)     */
-/* ------------------------------- */
+/* ================= ADMIN MODE ================= */
 let ADMIN = false;
-
 document.addEventListener("keydown", e => {
   if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "a") {
     ADMIN = !ADMIN;
-    document.getElementById("adminBanner").style.display = ADMIN ? "block" : "none";
+    adminBanner.style.display = ADMIN ? "block" : "none";
     refreshAll();
   }
 });
 
-/* ------------------------------- */
-/*   PERMANENT CHEMICAL LIST       */
-/* ------------------------------- */
+/* ================= DATA ================= */
 const permanentChemicals = {
-  "static fluid": 1000,
   "scp-008-2 blood": 15000,
   "scp-096 genome": 3000,
   "scp-323 host blood": 3000,
-  "scp-457 carbon": 1000,
-  "scp-860-2 blood": 1500,
-  "scp-9000 infectious sample": 1500,
-  "scp-966 skin": 2000,
-  "o-blood": 3000,
-  "immortal flesh": 3500,
   "interdimensional matter": 2000,
-  "crystalline blood": 2500,
-  "calcium": 750,
-  "anomalous matter": 800,
-  "amnesium": 3000,
-  "anomalous bone marrow": 3500,
-  "orange goop": 800,
-  "radioactive fluid": 1000,
-  "unstable quantum matter": 3000,
   "decaying matter": 2500,
-
-  "water": 100,
-  "progesterone": 300,
-  "potassium": 200,
-  "propionic acid": 450,
-  "sodium chloride": 100,
-  "salicyclic acid": 450,
-  "setraline": 500,
+  "anomalous matter": 800,
+  "unstable quantum matter": 3000,
+  "anomalous bone marrow": 3500,
+  "o-blood": 3000,
+  "amnesium": 3000,
+  "amn-a103": 1500,
+  "brodamide": 400,
+  "2-napthol": 250,
   "methyltestonerone": 300,
   "duloxetine": 250,
-  "ethanol": 500,
-  "dionized water": 150,
-  "citizol-q": 2000,
-  "brodamide": 400,
-  "chlorine": 750,
-  "anhydride": 250,
-  "2-napthol": 250,
-  "acetic anhydride": 350,
-  "acetone": 500,
-
-  "amino acid": 300,
-  "amn-a103": 1500,
-  "ventanyl": 1250,
   "betonine": 1000,
-  "sulfur": 500
+  "ventanyl": 1250,
+  "chlorine": 750
 };
 
-/* ------------------------------- */
-/*   PERMANENT RECIPES (EMPTY)     */
-/* ------------------------------- */
-let permanentRecipes = {
-
-};
-
-/* ------------------------------- */
-/*   ADMIN LOCAL RECIPES           */
-/* ------------------------------- */
+let permanentRecipes = {};
 let adminRecipes = JSON.parse(localStorage.getItem("adminRecipes") || "{}");
 
-/* ------------------------------- */
-/*   EXPORT / IMPORT (ADMIN ONLY)  */
-/* ------------------------------- */
-function exportAll() {
-  const data = {
-    permanent: permanentRecipes,
-    admin: adminRecipes
-  };
-  alert("Copied to clipboard!");
-  navigator.clipboard.writeText(JSON.stringify(data, null, 2));
-}
-
-function importAll() {
-  const raw = prompt("Paste exported JSON:");
-  if (!raw) return;
-  try {
-    const obj = JSON.parse(raw);
-
-    permanentRecipes = obj.permanent || {};
-    adminRecipes = obj.admin || {};
-
-    localStorage.setItem("adminRecipes", JSON.stringify(adminRecipes));
-    refreshAll();
-  } catch {
-    alert("Invalid JSON.");
-  }
-}
-
-/* ------------------------------- */
-/*   UTIL: MERGED ITEM LIST        */
-/* ------------------------------- */
-function getAllItems() {
-  const out = {};
-  
-  for (let k in permanentChemicals)
-    out[k] = { type: "chem", price: permanentChemicals[k] };
-
-  for (let k in permanentRecipes)
-    out[k] = { type: "recipe", price: computeCostPerLiter(k) };
-
-  for (let k in adminRecipes)
-    out[k] = { type: "recipe", price: computeCostPerLiter(k) };
-
-  return out;
-}
-
-/* ------------------------------- */
-/*   RECURSIVE COST ENGINE         */
-/* ------------------------------- */
+/* ================= COST ENGINE ================= */
 function expandRecipe(name, requiredOutput = 1) {
   const rec = permanentRecipes[name] || adminRecipes[name];
   if (!rec) return { outputLiters: 0, totalCost: 0 };
 
   const totalIn = rec.ingredients.reduce((s,i)=>s+i.liters,0);
   const outputPerRun = totalIn * (rec.yield / 100);
-
   const runs = requiredOutput / outputPerRun;
 
   let cost = 0;
 
   rec.ingredients.forEach(ing => {
     if (permanentRecipes[ing.name] || adminRecipes[ing.name]) {
-      const sub = expandRecipe(ing.name, ing.liters * runs);
-      cost += sub.totalCost;
+      cost += expandRecipe(ing.name, ing.liters * runs).totalCost;
     } else {
       cost += ing.liters * runs * (permanentChemicals[ing.name] || 0);
     }
   });
 
-  return {
-    outputLiters: requiredOutput,
-    totalCost: cost
-  };
+  return { outputLiters: requiredOutput, totalCost: cost };
 }
 
+function computeCostPerLiter(name) {
+  return expandRecipe(name, 1).totalCost;
+}
 
-
-/* ------------------------------- */
-/*   BATCH CALC ENGINE             */
-/* ------------------------------- */
+/* ================= REVERSE CALC ================= */
 function needInputs(recipe, desiredOutput) {
   const rec = permanentRecipes[recipe] || adminRecipes[recipe];
   if (!rec) return {};
@@ -315,318 +227,36 @@ function needInputs(recipe, desiredOutput) {
   const scale = desiredOutput / ((rec.yield/100) * totalIn);
 
   let totals = {};
-
   rec.ingredients.forEach(ing => {
-    const required = ing.liters * scale;
-
+    const req = ing.liters * scale;
     if (permanentRecipes[ing.name] || adminRecipes[ing.name]) {
-      const deep = needInputs(ing.name, required);
-      for (let k in deep)
-        totals[k] = (totals[k] || 0) + deep[k];
+      const deep = needInputs(ing.name, req);
+      for (let k in deep) totals[k] = (totals[k]||0)+deep[k];
     } else {
-      totals[ing.name] = (totals[ing.name] || 0) + required;
+      totals[ing.name] = (totals[ing.name]||0)+req;
     }
   });
-
   return totals;
 }
 
-
-function maxBatchesFromSupply(recipeName, supply) {
-  const rec = permanentRecipes[recipeName] || adminRecipes[recipeName];
-  if (!rec) return 0;
-
-  let max = Infinity;
-
-  rec.ingredients.forEach(ing => {
-    const avail = supply[ing.name] || 0;
-    if (ing.liters > 0)
-      max = Math.min(max, avail / ing.liters);
-  });
-
-  return max === Infinity ? 0 : max;
-}
-
-/* ------------------------------- */
-/*   PAGE SWITCHING                */
-/* ------------------------------- */
+/* ================= UI ================= */
 function showPage(id, tab) {
   document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
   document.getElementById(id).classList.add("active");
-
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   tab.classList.add("active");
 }
 
-/* ------------------------------- */
-/*   PAGE: CHEMICALS               */
-/* ------------------------------- */
-document.getElementById("chems").innerHTML = `
-  <h2>Chemicals</h2>
-  <div class="box">
-    <h3>Permanent Chemicals</h3>
-    <div id="permList"></div>
-  </div>
-`;
-
-function refreshChemicalsPage() {
-  permList.innerHTML = Object.keys(permanentChemicals)
-    .sort()
-    .map(k => `
-      <div class="row"><b>${k}</b> <span>$${permanentChemicals[k]}</span></div>
-    `).join("");
-}
-
-/* ------------------------------- */
-/*   PAGE: RECIPE BUILDER (ONCE)   */
-/* ------------------------------- */
-document.getElementById("builder").innerHTML = `
-  <h2>Create Recipe</h2>
-  <div class="box">
-    <input id="rName" placeholder="Recipe Name">
-    <input id="rYield" type="number" placeholder="Yield %">
-
-    <h3>Search Ingredient</h3>
-    <input id="rSearch" oninput="refreshIngredientSearch()" placeholder="Search...">
-    <div id="rResults" style="max-height:200px;overflow-y:auto;"></div>
-
-    <h3>Ingredients</h3>
-    <div id="rList"></div>
-
-    <button onclick="saveRecipe()">Save Recipe</button>
-  </div>
-`;
-
-let recipeBuilder = [];
-
-function refreshIngredientSearch() {
-  const q = rSearch.value.toLowerCase();
-  const all = getAllItems();
-
-  rResults.innerHTML = Object.keys(all)
-    .filter(k => k.includes(q))
-    .sort()
-    .map(name => `
-      <div class="search-result" onclick="addIngredient('${name}')">
-        <b>${name}</b> — $${all[name].price.toFixed(2)}/L
-      </div>
-    `).join("");
-}
-
-function addIngredient(name) {
-  recipeBuilder.push({ name, liters: 0 });
-  refreshIngredientList();
-}
-
-function refreshIngredientList() {
-  rList.innerHTML = recipeBuilder.length ?
-    recipeBuilder.map((i, idx) => `
-      <div class="row">
-        <div style="width:70%;">
-          <b>${i.name}</b><br>
-          <input type="number" value="${i.liters}" 
-                 oninput="recipeBuilder[${idx}].liters=parseFloat(this.value)||0">
-        </div>
-        <button class="red" onclick="removeIngredient(${idx})">X</button>
-      </div>
-    `).join("") :
-    "<i>No ingredients.</i>";
-}
-
-function removeIngredient(i) {
-  recipeBuilder.splice(i, 1);
-  refreshIngredientList();
-}
-
-function saveRecipe() {
-  if (!ADMIN) return alert("Admin only.");
-
-  const name = rName.value.trim().toLowerCase();
-  const y = parseFloat(rYield.value);
-
-  if (!name || isNaN(y) || !recipeBuilder.length)
-    return alert("Missing fields.");
-
-  adminRecipes[name] = {
-    yield: y,
-    ingredients: JSON.parse(JSON.stringify(recipeBuilder))
-  };
-
-  localStorage.setItem("adminRecipes", JSON.stringify(adminRecipes));
-
-  recipeBuilder = [];
-  rName.value = "";
-  rYield.value = "";
-
-  refreshIngredientList();
-  refreshAll();
-}
-
-/* ------------------------------- */
-/*   PAGE: RECIPES                 */
-/* ------------------------------- */
-document.getElementById("recipes").innerHTML = `
-  <h2>Recipes</h2>
-  <div class="box">
-    <div id="recipeList"></div>
-    <div id="adminTools"></div>
-  </div>
-`;
-
-function refreshRecipePage() {
-  let keys = [
-    ...Object.keys(permanentRecipes),
-    ...Object.keys(adminRecipes)
-  ].sort();
-
-  recipeList.innerHTML = keys.length ? keys.map(name => `
-    <div class="row">
-      <div>
-        <b>${name}</b>
-        <br>Yield: ${(permanentRecipes[name]||adminRecipes[name]).yield}%
-        <br>Cost/L: $${computeCostPerLiter(name).toFixed(2)}
-      </div>
-      ${ADMIN ? `
-        <button class="red" onclick="deleteRecipe('${name}')">Delete</button>
-      ` : ""}
-    </div>
-  `).join("") : "<i>No recipes yet.</i>";
-
-  adminTools.innerHTML = ADMIN ? `
-    <button onclick="exportAll()">Export ALL</button>
-    <button onclick="importAll()">Import ALL</button>
-  ` : "";
-}
-
-function deleteRecipe(n) {
-  if (permanentRecipes[n]) delete permanentRecipes[n];
-  if (adminRecipes[n]) delete adminRecipes[n];
-  localStorage.setItem("adminRecipes", JSON.stringify(adminRecipes));
-  refreshRecipePage();
-}
-
-/* ------------------------------- */
-/*   PAGE: BATCH CALC              */
-/* ------------------------------- */
-document.getElementById("batch").innerHTML = `
-  <h2>Batch Calculator</h2>
-
-  <div class="box">
-    <h3>Mode A — Desired Output</h3>
-    <select id="bADrop"></select>
-    <input id="bAOut" type="number" placeholder="Output L">
-    <button onclick="calcModeA()">Calculate</button>
-    <div id="bARes"></div>
-  </div>
-
-  <div class="box">
-    <h3>Mode B — Based on Supply</h3>
-    <select id="bBDrop"></select>
-    <textarea id="bBIn" placeholder="chemical: liters"></textarea>
-    <button onclick="calcModeB()">Calculate</button>
-    <div id="bBRes"></div>
-  </div>
-`;
-
-function refreshBatchPage() {
-  const keys = [
-    ...Object.keys(permanentRecipes),
-    ...Object.keys(adminRecipes)
-  ].sort();
-
-  const opts = `<option></option>` +
-    keys.map(k => `<option>${k}</option>`).join("");
-
-  bADrop.innerHTML = opts;
-  bBDrop.innerHTML = opts;
-}
-
-function calcModeA() {
-  const name = bADrop.value;
-  const out = parseFloat(bAOut.value);
-  if (!name || isNaN(out)) return bARes.innerHTML = "Invalid.";
-
-  const need = needInputs(name, out);
-  bARes.innerHTML = Object.keys(need)
-    .map(k => `• ${k}: ${need[k].toFixed(2)} L`)
-    .join("<br>");
-}
-
-function calcModeB() {
-  const name = bBDrop.value;
-  if (!name) return;
-
-  let supply = {};
-  bBIn.value.split("\n").forEach(line => {
-    const [chem, val] = line.split(":").map(s=>s.trim().toLowerCase());
-    supply[chem] = parseFloat(val)||0;
-  });
-
-  const batches = maxBatchesFromSupply(name, supply);
-  const rec = permanentRecipes[name] || adminRecipes[name];
-
-  const per = rec.ingredients.reduce((a,b)=>a + b.liters,0);
-  const out = per * batches * (rec.yield/100);
-
-  bBRes.innerHTML = `
-    <b>${out.toFixed(2)} L</b><br>
-    Batches: ${batches.toFixed(2)}
-  `;
-}
-
-/* ------------------------------- */
-/*   PAGE: PROFIT CALC             */
-/* ------------------------------- */
-document.getElementById("profit").innerHTML = `
-  <h2>Profit Calculator</h2>
-
-  <div class="box">
-    <select id="pDrop"></select>
-    <input id="pSale" type="number" placeholder="Sale price per L">
-    <button onclick="calcProfit()">Calculate</button>
-    <div id="pRes"></div>
-  </div>
-`;
-
-function refreshProfitPage() {
-  const keys = [
-    ...Object.keys(permanentRecipes),
-    ...Object.keys(adminRecipes)
-  ].sort();
-
-  pDrop.innerHTML = `<option></option>` +
-    keys.map(k => `<option>${k}</option>`).join("");
-}
-
-function calcProfit() {
-  const name = pDrop.value;
-  const sale = parseFloat(pSale.value);
-  if (!name || isNaN(sale)) return pRes.innerHTML = "Invalid.";
-
-  const cost = computeCostPerLiter(name);
-  const profit = sale - cost;
-
-  pRes.innerHTML = `
-    Cost/L: $${cost.toFixed(2)}<br>
-    Profit/L: $${profit.toFixed(2)}<br>
-    Margin: ${(profit/sale*100).toFixed(1)}%
-  `;
-}
-
-/* ------------------------------- */
-/*   GLOBAL REFRESH                */
-/* ------------------------------- */
+/* ================= REFRESH ================= */
 function refreshAll() {
-  refreshChemicalsPage();
-  refreshIngredientSearch();
-  refreshIngredientList();
-  refreshRecipePage();
-  refreshBatchPage();
-  refreshProfitPage();
+  chems.innerHTML = `
+    <h2>Chemicals</h2>
+    <div class="box">
+      ${Object.keys(permanentChemicals).sort()
+        .map(k=>`<div class="row"><b>${k}</b><span>$${permanentChemicals[k]}</span></div>`).join("")}
+    </div>`;
 }
-
 refreshAll();
-
 </script>
 
 </body>
