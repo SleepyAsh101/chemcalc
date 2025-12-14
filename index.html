@@ -163,26 +163,53 @@ document.addEventListener("keydown", e => {
   }
 });
 
-/* ================= DATA ================= */
+/* ================= PERMANENT CHEMICALS (FULL) ================= */
 const permanentChemicals = {
-  "interdimensional matter": 2000,
-  "decaying matter": 2500,
-  "anomalous matter": 800,
-  "unstable quantum matter": 3000,
+  "static fluid": 1000,
   "scp-008-2 blood": 15000,
   "scp-096 genome": 3000,
   "scp-323 host blood": 3000,
-  "anomalous bone marrow": 3500,
+  "scp-457 carbon": 1000,
+  "scp-860-2 blood": 1500,
+  "scp-9000 infectious sample": 1500,
+  "scp-966 skin": 2000,
   "o-blood": 3000,
+  "immortal flesh": 3500,
+  "interdimensional matter": 2000,
+  "crystalline blood": 2500,
+  "calcium": 750,
+  "anomalous matter": 800,
   "amnesium": 3000,
-  "amn-a103": 1500,
-  "brodamide": 400,
-  "2-napthol": 250,
+  "anomalous bone marrow": 3500,
+  "orange goop": 800,
+  "radioactive fluid": 1000,
+  "unstable quantum matter": 3000,
+  "decaying matter": 2500,
+
+  "water": 100,
+  "progesterone": 300,
+  "potassium": 200,
+  "propionic acid": 450,
+  "sodium chloride": 100,
+  "salicyclic acid": 450,
+  "setraline": 500,
   "methyltestonerone": 300,
   "duloxetine": 250,
-  "betonine": 1000,
+  "ethanol": 500,
+  "dionized water": 150,
+  "citizol-q": 2000,
+  "brodamide": 400,
+  "chlorine": 750,
+  "anhydride": 250,
+  "2-napthol": 250,
+  "acetic anhydride": 350,
+  "acetone": 500,
+
+  "amino acid": 300,
+  "amn-a103": 1500,
   "ventanyl": 1250,
-  "chlorine": 750
+  "betonine": 1000,
+  "sulfur": 500
 };
 
 let adminRecipes = JSON.parse(localStorage.getItem("adminRecipes") || "{}");
@@ -237,61 +264,12 @@ function showPage(id, tab) {
 }
 
 function refreshAll() {
-  chems.innerHTML = `<h2>Chemicals</h2><div class="box">${
-    Object.keys(permanentChemicals).sort()
-    .map(k=>`<div class="row"><b>${k}</b><span>$${permanentChemicals[k]}</span></div>`).join("")
-  }</div>`;
-
-  recipes.innerHTML = `<h2>Recipes</h2><div class="box">${
-    Object.keys(adminRecipes).map(r=>`
-      <div class="row">
-        <div><b>${r}</b><br>Yield ${adminRecipes[r].yield}%<br>$${computeCostPerLiter(r).toFixed(2)}/L</div>
-        ${ADMIN?`<button class="red" onclick="delete adminRecipes['${r}'];localStorage.setItem('adminRecipes',JSON.stringify(adminRecipes));refreshAll()">Delete</button>`:""}
-      </div>`).join("") || "<i>No recipes</i>"
-  }
-  ${ADMIN?`<button onclick="exportAll()">Export</button><button onclick="importAll()">Import</button>`:""}
-  </div>`;
-
-  batch.innerHTML = `<h2>Batch Calc</h2>
+  chems.innerHTML = `
+    <h2>Chemicals</h2>
     <div class="box">
-      <select id="bRec">${Object.keys(adminRecipes).map(r=>`<option>${r}</option>`).join("")}</select>
-      <input id="bOut" placeholder="Desired Output (L)">
-      <button onclick="runBatch()">Calculate</button>
-      <div id="bRes"></div>
+      ${Object.keys(permanentChemicals).sort()
+        .map(k=>`<div class="row"><b>${k}</b><span>$${permanentChemicals[k]}</span></div>`).join("")}
     </div>`;
-
-  profit.innerHTML = `<h2>Profit</h2>
-    <div class="box">
-      <select id="pRec">${Object.keys(adminRecipes).map(r=>`<option>${r}</option>`).join("")}</select>
-      <input id="pSale" placeholder="Sale $/L">
-      <button onclick="runProfit()">Calculate</button>
-      <div id="pRes"></div>
-    </div>`;
-}
-
-function runBatch(){
-  const r=bRec.value,o=parseFloat(bOut.value);
-  const n=needInputs(r,o);
-  bRes.innerHTML=Object.keys(n).map(k=>`${k}: ${n[k].toFixed(2)} L`).join("<br>");
-}
-
-function runProfit(){
-  const r=pRec.value,s=parseFloat(pSale.value);
-  const c=computeCostPerLiter(r);
-  pRes.innerHTML=`Cost: $${c.toFixed(2)}<br>Profit: $${(s-c).toFixed(2)}`;
-}
-
-function exportAll(){
-  navigator.clipboard.writeText(JSON.stringify(adminRecipes,null,2));
-  alert("Copied to clipboard");
-}
-
-function importAll(){
-  const d=prompt("Paste JSON");
-  if(!d)return;
-  adminRecipes=JSON.parse(d);
-  localStorage.setItem("adminRecipes",JSON.stringify(adminRecipes));
-  refreshAll();
 }
 
 refreshAll();
