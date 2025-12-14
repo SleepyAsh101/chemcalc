@@ -85,7 +85,7 @@
       margin-bottom:20px;
     }
 
-    input, textarea {
+    input, textarea, select {
       width:100%;
       padding:7px;
       margin:5px 0;
@@ -114,6 +114,7 @@
       justify-content:space-between;
       align-items:center;
       padding:6px 0;
+      gap:10px;
     }
 
     .search-result {
@@ -192,17 +193,33 @@ const permanentChemicals = {
 let permanentRecipes = {};
 let adminRecipes = JSON.parse(localStorage.getItem("adminRecipes") || "{}");
 
+/* ================= EXPORT / IMPORT ================= */
+function exportAll() {
+  const data = { permanent: permanentRecipes, admin: adminRecipes };
+  navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+  alert("Recipes copied to clipboard.");
+}
+
+function importAll() {
+  const raw = prompt("Paste exported JSON:");
+  if (!raw) return;
+  const obj = JSON.parse(raw);
+  permanentRecipes = obj.permanent || {};
+  adminRecipes = obj.admin || {};
+  localStorage.setItem("adminRecipes", JSON.stringify(adminRecipes));
+  refreshAll();
+}
+
 /* ================= COST ENGINE ================= */
 function expandRecipe(name, requiredOutput = 1) {
   const rec = permanentRecipes[name] || adminRecipes[name];
-  if (!rec) return { outputLiters: 0, totalCost: 0 };
+  if (!rec) return { totalCost: 0 };
 
   const totalIn = rec.ingredients.reduce((s,i)=>s+i.liters,0);
   const outputPerRun = totalIn * (rec.yield / 100);
   const runs = requiredOutput / outputPerRun;
 
   let cost = 0;
-
   rec.ingredients.forEach(ing => {
     if (permanentRecipes[ing.name] || adminRecipes[ing.name]) {
       cost += expandRecipe(ing.name, ing.liters * runs).totalCost;
@@ -211,32 +228,19 @@ function expandRecipe(name, requiredOutput = 1) {
     }
   });
 
-  return { outputLiters: requiredOutput, totalCost: cost };
+  return { totalCost: cost };
 }
 
 function computeCostPerLiter(name) {
   return expandRecipe(name, 1).totalCost;
 }
 
-/* ================= REVERSE CALC ================= */
-function needInputs(recipe, desiredOutput) {
-  const rec = permanentRecipes[recipe] || adminRecipes[recipe];
-  if (!rec) return {};
-
-  const totalIn = rec.ingredients.reduce((s,i)=>s+i.liters,0);
-  const scale = desiredOutput / ((rec.yield/100) * totalIn);
-
-  let totals = {};
-  rec.ingredients.forEach(ing => {
-    const req = ing.liters * scale;
-    if (permanentRecipes[ing.name] || adminRecipes[ing.name]) {
-      const deep = needInputs(ing.name, req);
-      for (let k in deep) totals[k] = (totals[k]||0)+deep[k];
-    } else {
-      totals[ing.name] = (totals[ing.name]||0)+req;
-    }
-  });
-  return totals;
+/* ================= UTIL ================= */
+function getAllItems() {
+  const out = {};
+  for (let k in permanentChemicals) out[k] = { price: permanentChemicals[k] };
+  for (let k in adminRecipes) out[k] = { price: computeCostPerLiter(k) };
+  return out;
 }
 
 /* ================= UI ================= */
@@ -247,14 +251,92 @@ function showPage(id, tab) {
   tab.classList.add("active");
 }
 
-/* ================= REFRESH ================= */
-function refreshAll() {
+/* ================= PAGES ================= */
+function refreshChemicalsPage() {
   chems.innerHTML = `
     <h2>Chemicals</h2>
     <div class="box">
       ${Object.keys(permanentChemicals).sort()
         .map(k=>`<div class="row"><b>${k}</b><span>$${permanentChemicals[k]}</span></div>`).join("")}
     </div>`;
+}
+
+let recipeBuilder = [];
+
+function refreshBuilderPage() {
+  builder.innerHTML = `
+    <h2>Create Recipe</h2>
+    <div class="box">
+      <input id="rName" placeholder="Recipe name">
+      <input id="rYield" type="number" placeholder="Yield %">
+      <input id="rSearch" placeholder="Search ingredient" oninput="searchIng()">
+      <div id="rResults"></div>
+      <div id="rList"></div>
+      <button onclick="saveRecipe()">Save</button>
+    </div>`;
+}
+
+function searchIng() {
+  const q = rSearch.value.toLowerCase();
+  rResults.innerHTML = Object.keys(getAllItems())
+    .filter(k=>k.includes(q))
+    .map(k=>`<div class="search-result" onclick="addIng('${k}')">${k}</div>`).join("");
+}
+
+function addIng(name) {
+  recipeBuilder.push({ name, liters: 1 });
+  refreshIngList();
+}
+
+function refreshIngList() {
+  rList.innerHTML = recipeBuilder.map((i,idx)=>`
+    <div class="row">
+      <b>${i.name}</b>
+      <input type="number" value="${i.liters}"
+        oninput="recipeBuilder[${idx}].liters=parseFloat(this.value)||0">
+      <button class="red" onclick="recipeBuilder.splice(${idx},1);refreshIngList()">X</button>
+    </div>`).join("");
+}
+
+function saveRecipe() {
+  if (!ADMIN) return alert("Admin only");
+  adminRecipes[rName.value.toLowerCase()] = {
+    yield: parseFloat(rYield.value),
+    ingredients: JSON.parse(JSON.stringify(recipeBuilder))
+  };
+  localStorage.setItem("adminRecipes", JSON.stringify(adminRecipes));
+  recipeBuilder = [];
+  refreshAll();
+}
+
+function refreshRecipesPage() {
+  recipes.innerHTML = `
+    <h2>Recipes</h2>
+    <div class="box">
+      ${Object.keys(adminRecipes).map(k=>`
+        <div class="row">
+          <b>${k}</b>
+          <span>$${computeCostPerLiter(k).toFixed(2)}/L</span>
+        </div>`).join("")}
+      ${ADMIN ? `<button onclick="exportAll()">Export</button><button onclick="importAll()">Import</button>` : ""}
+    </div>`;
+}
+
+function refreshBatchPage() {
+  batch.innerHTML = `<h2>Batch Calc</h2><div class="box">Use Recipes tab</div>`;
+}
+
+function refreshProfitPage() {
+  profit.innerHTML = `<h2>Profit</h2><div class="box">Use Recipes tab</div>`;
+}
+
+/* ================= GLOBAL ================= */
+function refreshAll() {
+  refreshChemicalsPage();
+  refreshBuilderPage();
+  refreshRecipesPage();
+  refreshBatchPage();
+  refreshProfitPage();
 }
 refreshAll();
 </script>
