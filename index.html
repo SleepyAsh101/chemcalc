@@ -13,7 +13,7 @@
       color: #eee;
     }
 
-    h1, h2, h3 { margin-top: 0; font-weight: 600; }
+    h1, h2, h3 { margin-top: 0; }
 
     .scp-header {
       background: #1a1a1a;
@@ -45,87 +45,82 @@
     #adminBanner {
       display: none;
       background: #8b0000;
-      color: #fff;
       padding: 12px;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
       border: 2px solid #ff4444;
       text-align: center;
-      font-size: 18px;
       border-radius: 6px;
     }
 
     .tabbar {
-      display:flex;
-      gap:10px;
-      margin-bottom:20px;
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
     }
 
     .tab {
-      padding:10px 18px;
-      background:#222;
-      border:1px solid #444;
-      border-radius:8px;
-      cursor:pointer;
-      color:#ccc;
+      padding: 10px 18px;
+      background: #222;
+      border: 1px solid #444;
+      border-radius: 8px;
+      cursor: pointer;
+      color: #ccc;
     }
 
     .tab.active {
-      background:#3498db;
-      color:#fff;
+      background: #3498db;
+      color: #fff;
     }
 
-    .page { display:none; }
-    .page.active { display:block; }
+    .page { display: none; }
+    .page.active { display: block; }
 
     .box {
-      background:#1a1a1a;
-      border:1px solid #333;
-      padding:15px;
-      border-radius:8px;
-      margin-bottom:20px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
     }
 
     input, textarea, select {
-      width:100%;
-      padding:7px;
-      margin:5px 0;
-      background:#222;
-      color:#eee;
-      border:1px solid #444;
-      border-radius:4px;
+      width: 100%;
+      padding: 7px;
+      margin: 5px 0;
+      background: #222;
+      color: #eee;
+      border: 1px solid #444;
+      border-radius: 4px;
     }
 
     button {
-      padding:9px;
-      width:100%;
-      margin-top:8px;
-      background:#3498db;
-      border:none;
-      border-radius:6px;
-      cursor:pointer;
-      color:white;
-      font-size:15px;
+      padding: 9px;
+      width: 100%;
+      margin-top: 8px;
+      background: #3498db;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      color: white;
     }
 
-    button.red { background:#c0392b; }
+    button.red { background: #c0392b; }
 
     .row {
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      padding:6px 0;
-      gap:10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
     }
 
     .search-result {
-      padding:8px;
-      border-bottom:1px solid #333;
-      cursor:pointer;
-      background:#111;
+      padding: 8px;
+      border-bottom: 1px solid #333;
+      cursor: pointer;
     }
 
     .search-result:hover {
-      background:#1e1e1e;
+      background: #1e1e1e;
     }
   </style>
 </head>
@@ -170,13 +165,13 @@ document.addEventListener("keydown", e => {
 
 /* ================= DATA ================= */
 const permanentChemicals = {
-  "scp-008-2 blood": 15000,
-  "scp-096 genome": 3000,
-  "scp-323 host blood": 3000,
   "interdimensional matter": 2000,
   "decaying matter": 2500,
   "anomalous matter": 800,
   "unstable quantum matter": 3000,
+  "scp-008-2 blood": 15000,
+  "scp-096 genome": 3000,
+  "scp-323 host blood": 3000,
   "anomalous bone marrow": 3500,
   "o-blood": 3000,
   "amnesium": 3000,
@@ -190,57 +185,47 @@ const permanentChemicals = {
   "chlorine": 750
 };
 
-let permanentRecipes = {};
 let adminRecipes = JSON.parse(localStorage.getItem("adminRecipes") || "{}");
 
-/* ================= EXPORT / IMPORT ================= */
-function exportAll() {
-  const data = { permanent: permanentRecipes, admin: adminRecipes };
-  navigator.clipboard.writeText(JSON.stringify(data, null, 2));
-  alert("Recipes copied to clipboard.");
-}
-
-function importAll() {
-  const raw = prompt("Paste exported JSON:");
-  if (!raw) return;
-  const obj = JSON.parse(raw);
-  permanentRecipes = obj.permanent || {};
-  adminRecipes = obj.admin || {};
-  localStorage.setItem("adminRecipes", JSON.stringify(adminRecipes));
-  refreshAll();
-}
-
 /* ================= COST ENGINE ================= */
-function expandRecipe(name, requiredOutput = 1) {
-  const rec = permanentRecipes[name] || adminRecipes[name];
-  if (!rec) return { totalCost: 0 };
+function expandRecipe(name, output = 1) {
+  const rec = adminRecipes[name];
+  if (!rec) return { cost: 0 };
 
   const totalIn = rec.ingredients.reduce((s,i)=>s+i.liters,0);
-  const outputPerRun = totalIn * (rec.yield / 100);
-  const runs = requiredOutput / outputPerRun;
-
+  const runs = output / (totalIn * (rec.yield/100));
   let cost = 0;
-  rec.ingredients.forEach(ing => {
-    if (permanentRecipes[ing.name] || adminRecipes[ing.name]) {
-      cost += expandRecipe(ing.name, ing.liters * runs).totalCost;
+
+  rec.ingredients.forEach(i => {
+    if (adminRecipes[i.name]) {
+      cost += expandRecipe(i.name, i.liters * runs).cost;
     } else {
-      cost += ing.liters * runs * (permanentChemicals[ing.name] || 0);
+      cost += i.liters * runs * (permanentChemicals[i.name] || 0);
     }
   });
 
-  return { totalCost: cost };
+  return { cost };
 }
 
 function computeCostPerLiter(name) {
-  return expandRecipe(name, 1).totalCost;
+  return expandRecipe(name, 1).cost;
 }
 
-/* ================= UTIL ================= */
-function getAllItems() {
-  const out = {};
-  for (let k in permanentChemicals) out[k] = { price: permanentChemicals[k] };
-  for (let k in adminRecipes) out[k] = { price: computeCostPerLiter(k) };
-  return out;
+/* ================= BATCH ================= */
+function needInputs(recipe, out) {
+  const rec = adminRecipes[recipe];
+  const totalIn = rec.ingredients.reduce((s,i)=>s+i.liters,0);
+  const scale = out / ((rec.yield/100) * totalIn);
+  let res = {};
+  rec.ingredients.forEach(i=>{
+    if (adminRecipes[i.name]) {
+      const d = needInputs(i.name, i.liters*scale);
+      for (let k in d) res[k]=(res[k]||0)+d[k];
+    } else {
+      res[i.name]=(res[i.name]||0)+i.liters*scale;
+    }
+  });
+  return res;
 }
 
 /* ================= UI ================= */
@@ -251,93 +236,64 @@ function showPage(id, tab) {
   tab.classList.add("active");
 }
 
-/* ================= PAGES ================= */
-function refreshChemicalsPage() {
-  chems.innerHTML = `
-    <h2>Chemicals</h2>
+function refreshAll() {
+  chems.innerHTML = `<h2>Chemicals</h2><div class="box">${
+    Object.keys(permanentChemicals).sort()
+    .map(k=>`<div class="row"><b>${k}</b><span>$${permanentChemicals[k]}</span></div>`).join("")
+  }</div>`;
+
+  recipes.innerHTML = `<h2>Recipes</h2><div class="box">${
+    Object.keys(adminRecipes).map(r=>`
+      <div class="row">
+        <div><b>${r}</b><br>Yield ${adminRecipes[r].yield}%<br>$${computeCostPerLiter(r).toFixed(2)}/L</div>
+        ${ADMIN?`<button class="red" onclick="delete adminRecipes['${r}'];localStorage.setItem('adminRecipes',JSON.stringify(adminRecipes));refreshAll()">Delete</button>`:""}
+      </div>`).join("") || "<i>No recipes</i>"
+  }
+  ${ADMIN?`<button onclick="exportAll()">Export</button><button onclick="importAll()">Import</button>`:""}
+  </div>`;
+
+  batch.innerHTML = `<h2>Batch Calc</h2>
     <div class="box">
-      ${Object.keys(permanentChemicals).sort()
-        .map(k=>`<div class="row"><b>${k}</b><span>$${permanentChemicals[k]}</span></div>`).join("")}
+      <select id="bRec">${Object.keys(adminRecipes).map(r=>`<option>${r}</option>`).join("")}</select>
+      <input id="bOut" placeholder="Desired Output (L)">
+      <button onclick="runBatch()">Calculate</button>
+      <div id="bRes"></div>
+    </div>`;
+
+  profit.innerHTML = `<h2>Profit</h2>
+    <div class="box">
+      <select id="pRec">${Object.keys(adminRecipes).map(r=>`<option>${r}</option>`).join("")}</select>
+      <input id="pSale" placeholder="Sale $/L">
+      <button onclick="runProfit()">Calculate</button>
+      <div id="pRes"></div>
     </div>`;
 }
 
-let recipeBuilder = [];
-
-function refreshBuilderPage() {
-  builder.innerHTML = `
-    <h2>Create Recipe</h2>
-    <div class="box">
-      <input id="rName" placeholder="Recipe name">
-      <input id="rYield" type="number" placeholder="Yield %">
-      <input id="rSearch" placeholder="Search ingredient" oninput="searchIng()">
-      <div id="rResults"></div>
-      <div id="rList"></div>
-      <button onclick="saveRecipe()">Save</button>
-    </div>`;
+function runBatch(){
+  const r=bRec.value,o=parseFloat(bOut.value);
+  const n=needInputs(r,o);
+  bRes.innerHTML=Object.keys(n).map(k=>`${k}: ${n[k].toFixed(2)} L`).join("<br>");
 }
 
-function searchIng() {
-  const q = rSearch.value.toLowerCase();
-  rResults.innerHTML = Object.keys(getAllItems())
-    .filter(k=>k.includes(q))
-    .map(k=>`<div class="search-result" onclick="addIng('${k}')">${k}</div>`).join("");
+function runProfit(){
+  const r=pRec.value,s=parseFloat(pSale.value);
+  const c=computeCostPerLiter(r);
+  pRes.innerHTML=`Cost: $${c.toFixed(2)}<br>Profit: $${(s-c).toFixed(2)}`;
 }
 
-function addIng(name) {
-  recipeBuilder.push({ name, liters: 1 });
-  refreshIngList();
+function exportAll(){
+  navigator.clipboard.writeText(JSON.stringify(adminRecipes,null,2));
+  alert("Copied to clipboard");
 }
 
-function refreshIngList() {
-  rList.innerHTML = recipeBuilder.map((i,idx)=>`
-    <div class="row">
-      <b>${i.name}</b>
-      <input type="number" value="${i.liters}"
-        oninput="recipeBuilder[${idx}].liters=parseFloat(this.value)||0">
-      <button class="red" onclick="recipeBuilder.splice(${idx},1);refreshIngList()">X</button>
-    </div>`).join("");
-}
-
-function saveRecipe() {
-  if (!ADMIN) return alert("Admin only");
-  adminRecipes[rName.value.toLowerCase()] = {
-    yield: parseFloat(rYield.value),
-    ingredients: JSON.parse(JSON.stringify(recipeBuilder))
-  };
-  localStorage.setItem("adminRecipes", JSON.stringify(adminRecipes));
-  recipeBuilder = [];
+function importAll(){
+  const d=prompt("Paste JSON");
+  if(!d)return;
+  adminRecipes=JSON.parse(d);
+  localStorage.setItem("adminRecipes",JSON.stringify(adminRecipes));
   refreshAll();
 }
 
-function refreshRecipesPage() {
-  recipes.innerHTML = `
-    <h2>Recipes</h2>
-    <div class="box">
-      ${Object.keys(adminRecipes).map(k=>`
-        <div class="row">
-          <b>${k}</b>
-          <span>$${computeCostPerLiter(k).toFixed(2)}/L</span>
-        </div>`).join("")}
-      ${ADMIN ? `<button onclick="exportAll()">Export</button><button onclick="importAll()">Import</button>` : ""}
-    </div>`;
-}
-
-function refreshBatchPage() {
-  batch.innerHTML = `<h2>Batch Calc</h2><div class="box">Use Recipes tab</div>`;
-}
-
-function refreshProfitPage() {
-  profit.innerHTML = `<h2>Profit</h2><div class="box">Use Recipes tab</div>`;
-}
-
-/* ================= GLOBAL ================= */
-function refreshAll() {
-  refreshChemicalsPage();
-  refreshBuilderPage();
-  refreshRecipesPage();
-  refreshBatchPage();
-  refreshProfitPage();
-}
 refreshAll();
 </script>
 
