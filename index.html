@@ -50,6 +50,7 @@
       border: 2px solid #ff4444;
       text-align: center;
       border-radius: 6px;
+      font-weight: bold;
     }
 
     .tabbar {
@@ -83,44 +84,11 @@
       margin-bottom: 20px;
     }
 
-    input, textarea, select {
-      width: 100%;
-      padding: 7px;
-      margin: 5px 0;
-      background: #222;
-      color: #eee;
-      border: 1px solid #444;
-      border-radius: 4px;
-    }
-
-    button {
-      padding: 9px;
-      width: 100%;
-      margin-top: 8px;
-      background: #3498db;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      color: white;
-    }
-
-    button.red { background: #c0392b; }
-
     .row {
       display: flex;
       justify-content: space-between;
-      align-items: center;
       padding: 6px 0;
-    }
-
-    .search-result {
-      padding: 8px;
       border-bottom: 1px solid #333;
-      cursor: pointer;
-    }
-
-    .search-result:hover {
-      background: #1e1e1e;
     }
   </style>
 </head>
@@ -147,23 +115,24 @@
 </div>
 
 <div id="chems" class="page active"></div>
-<div id="builder" class="page"></div>
-<div id="recipes" class="page"></div>
-<div id="batch" class="page"></div>
-<div id="profit" class="page"></div>
+<div id="builder" class="page"><div class="box">Recipe builder coming online.</div></div>
+<div id="recipes" class="page"><div class="box">No recipes loaded.</div></div>
+<div id="batch" class="page"><div class="box">Batch calculator idle.</div></div>
+<div id="profit" class="page"><div class="box">Profit analysis unavailable.</div></div>
 
 <script>
 /* ================= ADMIN MODE ================= */
 let ADMIN = false;
+const adminBanner = document.getElementById("adminBanner");
+
 document.addEventListener("keydown", e => {
   if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "a") {
     ADMIN = !ADMIN;
     adminBanner.style.display = ADMIN ? "block" : "none";
-    refreshAll();
   }
 });
 
-/* ================= PERMANENT CHEMICALS (FULL) ================= */
+/* ================= CHEMICAL DATABASE ================= */
 const permanentChemicals = {
   "static fluid": 1000,
   "scp-008-2 blood": 15000,
@@ -191,17 +160,17 @@ const permanentChemicals = {
   "potassium": 200,
   "propionic acid": 450,
   "sodium chloride": 100,
-  "salicyclic acid": 450,
-  "setraline": 500,
-  "methyltestonerone": 300,
+  "salicylic acid": 450,
+  "sertraline": 500,
+  "methyltestosterone": 300,
   "duloxetine": 250,
   "ethanol": 500,
-  "dionized water": 150,
+  "deionized water": 150,
   "citizol-q": 2000,
   "brodamide": 400,
   "chlorine": 750,
   "anhydride": 250,
-  "2-napthol": 250,
+  "2-naphthol": 250,
   "acetic anhydride": 350,
   "acetone": 500,
 
@@ -212,67 +181,29 @@ const permanentChemicals = {
   "sulfur": 500
 };
 
-let adminRecipes = JSON.parse(localStorage.getItem("adminRecipes") || "{}");
-
-/* ================= COST ENGINE ================= */
-function expandRecipe(name, output = 1) {
-  const rec = adminRecipes[name];
-  if (!rec) return { cost: 0 };
-
-  const totalIn = rec.ingredients.reduce((s,i)=>s+i.liters,0);
-  const runs = output / (totalIn * (rec.yield/100));
-  let cost = 0;
-
-  rec.ingredients.forEach(i => {
-    if (adminRecipes[i.name]) {
-      cost += expandRecipe(i.name, i.liters * runs).cost;
-    } else {
-      cost += i.liters * runs * (permanentChemicals[i.name] || 0);
-    }
-  });
-
-  return { cost };
-}
-
-function computeCostPerLiter(name) {
-  return expandRecipe(name, 1).cost;
-}
-
-/* ================= BATCH ================= */
-function needInputs(recipe, out) {
-  const rec = adminRecipes[recipe];
-  const totalIn = rec.ingredients.reduce((s,i)=>s+i.liters,0);
-  const scale = out / ((rec.yield/100) * totalIn);
-  let res = {};
-  rec.ingredients.forEach(i=>{
-    if (adminRecipes[i.name]) {
-      const d = needInputs(i.name, i.liters*scale);
-      for (let k in d) res[k]=(res[k]||0)+d[k];
-    } else {
-      res[i.name]=(res[i.name]||0)+i.liters*scale;
-    }
-  });
-  return res;
-}
-
 /* ================= UI ================= */
 function showPage(id, tab) {
-  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   document.getElementById(id).classList.add("active");
-  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
   tab.classList.add("active");
 }
 
-function refreshAll() {
-  chems.innerHTML = `
-    <h2>Chemicals</h2>
+function renderChemicals() {
+  const container = document.getElementById("chems");
+  container.innerHTML = `
+    <h2>Chemicals (Price per Liter)</h2>
     <div class="box">
-      ${Object.keys(permanentChemicals).sort()
-        .map(k=>`<div class="row"><b>${k}</b><span>$${permanentChemicals[k]}</span></div>`).join("")}
-    </div>`;
+      ${Object.entries(permanentChemicals)
+        .sort((a,b)=>a[0].localeCompare(b[0]))
+        .map(([name,price]) =>
+          `<div class="row"><span>${name}</span><span>$${price}</span></div>`
+        ).join("")}
+    </div>
+  `;
 }
 
-refreshAll();
+renderChemicals();
 </script>
 
 </body>
