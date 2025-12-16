@@ -3,7 +3,6 @@
 <head>
   <title>SCP Chemistry Calculator — Site-65</title>
   <meta charset="UTF-8" />
-
   <style>
     body {
       font-family: Arial;
@@ -12,8 +11,7 @@
       background: #0c0c0c;
       color: #eee;
     }
-
-    h1, h2, h3 { margin-top: 0; }
+    h2 { margin-top: 0; }
 
     .scp-header {
       background: #1a1a1a;
@@ -40,17 +38,6 @@
       font-weight: bold;
       border-radius: 6px;
       margin-left: auto;
-    }
-
-    #adminBanner {
-      display: none;
-      background: #8b0000;
-      padding: 12px;
-      margin-bottom: 15px;
-      border: 2px solid #ff4444;
-      text-align: center;
-      border-radius: 6px;
-      font-weight: bold;
     }
 
     .tabbar {
@@ -84,6 +71,18 @@
       margin-bottom: 20px;
     }
 
+    input, select, button {
+      width: 100%;
+      padding: 7px;
+      margin-top: 6px;
+      background: #222;
+      color: #eee;
+      border: 1px solid #444;
+      border-radius: 4px;
+    }
+
+    button { background: #3498db; cursor: pointer; }
+
     .row {
       display: flex;
       justify-content: space-between;
@@ -104,106 +103,128 @@
   <div class="scp-badge">LEVEL 3</div>
 </div>
 
-<div id="adminBanner">⚠ ADMIN MODE ACTIVE — Editing Enabled</div>
-
 <div class="tabbar">
-  <div class="tab active" onclick="showPage('chems', this)">Chemicals</div>
-  <div class="tab" onclick="showPage('builder', this)">Create Recipe</div>
-  <div class="tab" onclick="showPage('recipes', this)">Recipes</div>
-  <div class="tab" onclick="showPage('batch', this)">Batch Calc</div>
-  <div class="tab" onclick="showPage('profit', this)">Profit</div>
+  <div class="tab active" onclick="showPage('chems',this)">Chemicals</div>
+  <div class="tab" onclick="showPage('builder',this)">Create Recipe</div>
+  <div class="tab" onclick="showPage('recipes',this)">Recipes</div>
 </div>
 
 <div id="chems" class="page active"></div>
-<div id="builder" class="page"><div class="box">Recipe builder coming online.</div></div>
-<div id="recipes" class="page"><div class="box">No recipes loaded.</div></div>
-<div id="batch" class="page"><div class="box">Batch calculator idle.</div></div>
-<div id="profit" class="page"><div class="box">Profit analysis unavailable.</div></div>
+<div id="builder" class="page"></div>
+<div id="recipes" class="page"></div>
 
 <script>
-/* ================= ADMIN MODE ================= */
-let ADMIN = false;
-const adminBanner = document.getElementById("adminBanner");
-
-document.addEventListener("keydown", e => {
-  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "a") {
-    ADMIN = !ADMIN;
-    adminBanner.style.display = ADMIN ? "block" : "none";
-  }
-});
-
-/* ================= CHEMICAL DATABASE ================= */
+/* ================= DATA ================= */
 const permanentChemicals = {
-  "static fluid": 1000,
-  "scp-008-2 blood": 15000,
-  "scp-096 genome": 3000,
-  "scp-323 host blood": 3000,
-  "scp-457 carbon": 1000,
-  "scp-860-2 blood": 1500,
-  "scp-9000 infectious sample": 1500,
-  "scp-966 skin": 2000,
-  "o-blood": 3000,
-  "immortal flesh": 3500,
-  "interdimensional matter": 2000,
-  "crystalline blood": 2500,
-  "calcium": 750,
-  "anomalous matter": 800,
-  "amnesium": 3000,
-  "anomalous bone marrow": 3500,
-  "orange goop": 800,
-  "radioactive fluid": 1000,
-  "unstable quantum matter": 3000,
-  "decaying matter": 2500,
-
   "water": 100,
-  "progesterone": 300,
-  "potassium": 200,
-  "propionic acid": 450,
-  "sodium chloride": 100,
-  "salicylic acid": 450,
-  "sertraline": 500,
+  "deionized water": 150,
   "methyltestosterone": 300,
   "duloxetine": 250,
-  "ethanol": 500,
-  "deionized water": 150,
-  "citizol-q": 2000,
-  "brodamide": 400,
-  "chlorine": 750,
-  "anhydride": 250,
   "2-naphthol": 250,
   "acetic anhydride": 350,
-  "acetone": 500,
-
-  "amino acid": 300,
-  "amn-a103": 1500,
+  "amnesium": 3000,
+  "anomalous matter": 800,
+  "unstable quantum matter": 3000,
+  "decaying matter": 2500,
+  "chlorine": 750,
   "ventanyl": 1250,
-  "betonine": 1000,
-  "sulfur": 500
+  "betonine": 1000
 };
 
-/* ================= UI ================= */
+let recipes = JSON.parse(localStorage.getItem("recipes") || "{}");
+
+/* ================= UI NAV ================= */
 function showPage(id, tab) {
-  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
   document.getElementById(id).classList.add("active");
-  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   tab.classList.add("active");
 }
 
+/* ================= CHEMICALS ================= */
 function renderChemicals() {
-  const container = document.getElementById("chems");
-  container.innerHTML = `
-    <h2>Chemicals (Price per Liter)</h2>
+  chems.innerHTML = `
+    <h2>Chemicals (per Liter)</h2>
     <div class="box">
       ${Object.entries(permanentChemicals)
-        .sort((a,b)=>a[0].localeCompare(b[0]))
-        .map(([name,price]) =>
-          `<div class="row"><span>${name}</span><span>$${price}</span></div>`
-        ).join("")}
-    </div>
-  `;
+        .map(([n,p])=>`<div class="row"><span>${n}</span><span>$${p}</span></div>`).join("")}
+    </div>`;
 }
 
+/* ================= BUILDER ================= */
+function renderBuilder() {
+  builder.innerHTML = `
+    <h2>Create Recipe</h2>
+    <div class="box">
+      <input id="rName" placeholder="Recipe Name">
+      <input id="rYield" type="number" placeholder="Yield %" value="50">
+
+      <select id="chemSelect">
+        ${Object.keys(permanentChemicals).map(c=>`<option>${c}</option>`)}
+      </select>
+      <input id="chemLiters" type="number" placeholder="Liters" value="1">
+      <button onclick="addIngredient()">Add Ingredient</button>
+
+      <div id="ingList"></div>
+      <button onclick="saveRecipe()">Save Recipe</button>
+    </div>`;
+}
+
+let tempIngredients = [];
+
+function addIngredient() {
+  const name = chemSelect.value;
+  const liters = parseFloat(chemLiters.value);
+  if (!liters || liters <= 0) return;
+  tempIngredients.push({name, liters});
+  renderIngredients();
+}
+
+function renderIngredients() {
+  ingList.innerHTML = tempIngredients
+    .map(i=>`<div class="row"><span>${i.name}</span><span>${i.liters} L</span></div>`).join("");
+}
+
+function saveRecipe() {
+  const name = rName.value.trim();
+  const yieldPct = parseFloat(rYield.value);
+  if (!name || !yieldPct || tempIngredients.length === 0) return;
+
+  recipes[name] = { yield: yieldPct, ingredients: tempIngredients };
+  localStorage.setItem("recipes", JSON.stringify(recipes));
+
+  tempIngredients = [];
+  renderIngredients();
+  renderRecipes();
+  alert("Recipe saved");
+}
+
+/* ================= COST ENGINE ================= */
+function costPerLiter(recipe) {
+  const r = recipes[recipe];
+  const totalIn = r.ingredients.reduce((s,i)=>s+i.liters,0);
+  const scale = 1 / (totalIn * (r.yield/100));
+  return r.ingredients.reduce((sum,i)=>
+    sum + i.liters * scale * permanentChemicals[i.name], 0);
+}
+
+/* ================= RECIPES ================= */
+function renderRecipes() {
+  recipesDiv.innerHTML = `
+    <h2>Saved Recipes</h2>
+    <div class="box">
+      ${Object.keys(recipes).map(r=>
+        `<div class="row">
+          <span>${r}</span>
+          <span>$${costPerLiter(r).toFixed(2)} / L</span>
+        </div>`).join("")}
+    </div>`;
+}
+
+/* ================= INIT ================= */
 renderChemicals();
+renderBuilder();
+renderRecipes();
 </script>
 
 </body>
