@@ -156,7 +156,7 @@ function saveRecipe(){
   saveChemDB(); localStorage.setItem("recipes",JSON.stringify(recipes)); init();
 }
 function loadRecipe(){ let r=recipes[savedRecipes.value]; if(!r)return;
-  chemA.value=r.a; chemB.value=r.b; amtA.value=r.la; amtB.value=r.lb; rYield.value=r.y*100;
+  rName.value = name; chemA.value=r.a; chemB.value=r.b; amtA.value=r.la; amtB.value=r.lb; rYield.value=r.y*100; 
 }
 function deleteRecipe(){ delete recipes[savedRecipes.value]; localStorage.setItem("recipes",JSON.stringify(recipes)); init(); }
 function loadRecipeList(){ savedRecipes.innerHTML=Object.keys(recipes).map(r=>`<option>${r}</option>`).join(""); }
