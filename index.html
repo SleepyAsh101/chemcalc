@@ -20,7 +20,7 @@ h1,h2 {margin-top:0}
   padding:15px;
   margin-bottom:15px;
 }
-input,button {
+input,select,button {
   background:#1f1f1f;
   color:#eee;
   border:1px solid #444;
@@ -71,7 +71,7 @@ td,th {border-bottom:1px solid #333;padding:6px}
 <div id="output" class="small" style="margin-top:10px"></div>
 </div>
 
-<!-- RECIPE MANAGEMENT -->
+<!-- RECIPES -->
 <div class="box">
 <h2>Recipes</h2>
 <select id="savedRecipes"></select>
@@ -82,53 +82,33 @@ td,th {border-bottom:1px solid #333;padding:6px}
 <input type="file" onchange="importRecipes(event)">
 </div>
 
+<!-- REQUIREMENTS -->
+<div class="box">
+<h2>Recipe Requirements</h2>
+<select id="reqRecipe"></select>
+<input id="reqAmount" type="number" step="0.01" placeholder="Target Output (L)">
+<button onclick="showRequirements()">Show Requirements</button>
+<div id="reqOutput" class="small" style="margin-top:10px"></div>
+</div>
+
 <script>
 /* ================= DATA ================= */
 let chemicals = JSON.parse(localStorage.getItem("chemDB")) || {
-  "2-Napthol": 250,
-  "Acetic Anhydride": 350,
-  "Acetone": 500,
-  "AMN-A103": 1500,
-  "Amino Acid": 300,
-  "Amnesium": 3000,
-  "Anhydride": 250,
-  "Anomalous Bone Marrow": 3500,
-  "Anomalous Matter": 1000,
-  "Betonine": 1000,
-  "Brodamine": 450,
-  "Calcium": 750,
-  "Chlorine": 750,
-  "Citizol-Q": 2000,
-  "Crystalline Blood": 2500,
-  "Decaying Matter": 3000,
-  "Dionized Water": 150,
-  "Duloxetine": 250,
-  "Ethanol": 500,
-  "Immortal Flesh": 3500,
-  "Interdimensional Matter": 2000,
-  "Methyltestonerone": 300,
-  "O- Blood": 2500,
-  "Orange goop": 800,
-  "Potassium": 200,
-  "Progesterone": 300,
-  "Propionic Acid": 450,
-  "Radioactive Fluid": 1000,
-  "Salicyclic Acid": 450,
-  "SCP-008-2 Blood": 15000,
-  "SCP-096 Genome": 3000,
-  "SCP-323 Host Blood": 3000,
-  "SCP-457 Carbon": 1000,
-  "SCP-860-2 Blood": 1500,
-  "SCP-9000 Infectious Sample": 1500,
-  "SCP-966 Blood": 1500,
-  "SCP-966 Skin": 2000,
-  "Setraline": 500,
-  "Sodium Chloride": 100,
-  "Static Fluid": 1000,
-  "Sulfur": 500,
-  "Unstable Quantum Matter": 3000,
-  "Ventanyl": 1000,
-  "Water": 100
+  "2-Napthol":250,"Acetic Anhydride":350,"Acetone":500,"AMN-A103":1500,
+  "Amino Acid":300,"Amnesium":3000,"Anhydride":250,
+  "Anomalous Bone Marrow":3500,"Anomalous Matter":1000,"Betonine":1000,
+  "Brodamine":450,"Calcium":750,"Chlorine":750,"Citizol-Q":2000,
+  "Crystalline Blood":2500,"Decaying Matter":3000,"Dionized Water":150,
+  "Duloxetine":250,"Ethanol":500,"Immortal Flesh":3500,
+  "Interdimensional Matter":2000,"Methyltestonerone":300,"O- Blood":2500,
+  "Orange goop":800,"Potassium":200,"Progesterone":300,
+  "Propionic Acid":450,"Radioactive Fluid":1000,"Salicyclic Acid":450,
+  "SCP-008-2 Blood":15000,"SCP-096 Genome":3000,
+  "SCP-323 Host Blood":3000,"SCP-457 Carbon":1000,
+  "SCP-860-2 Blood":1500,"SCP-9000 Infectious Sample":1500,
+  "SCP-966 Blood":1500,"SCP-966 Skin":2000,"Setraline":500,
+  "Sodium Chloride":100,"Static Fluid":1000,"Sulfur":500,
+  "Unstable Quantum Matter":3000,"Ventanyl":1000,"Water":100
 };
 
 let recipes = JSON.parse(localStorage.getItem("recipes")) || {};
@@ -138,6 +118,7 @@ function init(){
   renderChemTable();
   renderDatalist();
   loadRecipeList();
+  reqRecipe.innerHTML = Object.keys(recipes).map(r=>`<option>${r}</option>`).join("");
 }
 init();
 
@@ -147,7 +128,8 @@ function renderChemTable(){
   for(let c in chemicals){
     html+=`<tr>
       <td>${c}</td>
-      <td><input type="number" value="${chemicals[c]}" onchange="chemicals['${c}']=this.value;saveChemDB()"></td>
+      <td><input type="number" value="${chemicals[c]}"
+      onchange="chemicals['${c}']=parseFloat(this.value);saveChemDB();recalcAllRecipes()"></td>
       <td><button onclick="delete chemicals['${c}'];saveChemDB();init()">X</button></td>
     </tr>`;
   }
@@ -197,14 +179,8 @@ function saveRecipe(){
   let la=parseFloat(amtA.value),lb=parseFloat(amtB.value);
   let y=parseFloat(rYield.value)/100;
 
-  let cost=la*chemicals[a]+lb*chemicals[b];
-  let outL=(la+lb)*y;
-  let perL=cost/outL;
-
   recipes[name]={a,b,la,lb,y};
-
-  // CREATE NEW CHEMICAL FROM RECIPE
-  chemicals[name]=parseFloat(perL.toFixed(2));
+  chemicals[name]=calcRecipePrice(name);
 
   saveChemDB();
   localStorage.setItem("recipes",JSON.stringify(recipes));
@@ -214,17 +190,15 @@ function saveRecipe(){
 function loadRecipe(){
   let r=recipes[savedRecipes.value];
   if(!r)return;
-  chemA.value=r.a;
-  chemB.value=r.b;
-  amtA.value=r.la;
-  amtB.value=r.lb;
+  chemA.value=r.a; chemB.value=r.b;
+  amtA.value=r.la; amtB.value=r.lb;
   rYield.value=r.y*100;
 }
 
 function deleteRecipe(){
   delete recipes[savedRecipes.value];
   localStorage.setItem("recipes",JSON.stringify(recipes));
-  loadRecipeList();
+  init();
 }
 
 function loadRecipeList(){
@@ -232,11 +206,56 @@ function loadRecipeList(){
     .map(r=>`<option>${r}</option>`).join("");
 }
 
+/* ================= REQUIREMENTS ================= */
+function showRequirements(){
+  let name=reqRecipe.value;
+  let target=parseFloat(reqAmount.value);
+  if(!recipes[name]||!target)return;
+
+  let totals={};
+  resolveRecipe(name,target,totals);
+
+  let html="<b>Base Components Required:</b><br>";
+  for(let c in totals){
+    html+=`${c}: ${totals[c].toFixed(3)} L<br>`;
+  }
+  reqOutput.innerHTML=html;
+}
+
+function resolveRecipe(name,needed,totals){
+  let r=recipes[name];
+  if(!r){
+    totals[name]=(totals[name]||0)+needed;
+    return;
+  }
+  let out=(r.la+r.lb)*r.y;
+  let batches=needed/out;
+  resolveRecipe(r.a,r.la*batches,totals);
+  resolveRecipe(r.b,r.lb*batches,totals);
+}
+
+/* ================= PRICE PROPAGATION ================= */
+function recalcAllRecipes(){
+  for(let r in recipes){
+    chemicals[r]=calcRecipePrice(r);
+  }
+  saveChemDB();
+}
+
+function calcRecipePrice(name){
+  let r=recipes[name];
+  let ca=recipes[r.a]?calcRecipePrice(r.a):chemicals[r.a];
+  let cb=recipes[r.b]?calcRecipePrice(r.b):chemicals[r.b];
+  let cost=r.la*ca+r.lb*cb;
+  let out=(r.la+r.lb)*r.y;
+  return parseFloat((cost/out).toFixed(2));
+}
+
 /* ================= IMPORT / EXPORT ================= */
 function exportRecipes(){
-  let data=JSON.stringify(recipes,null,2);
+  let d=JSON.stringify(recipes,null,2);
   let a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([data],{type:"application/json"}));
+  a.href=URL.createObjectURL(new Blob([d],{type:"application/json"}));
   a.download="recipes.json";
   a.click();
 }
@@ -246,10 +265,10 @@ function importRecipes(e){
   if(!f)return;
   let r=new FileReader();
   r.onload=()=>{
-    let imported=JSON.parse(r.result);
-    Object.assign(recipes,imported);
+    Object.assign(recipes,JSON.parse(r.result));
     localStorage.setItem("recipes",JSON.stringify(recipes));
-    loadRecipeList();
+    recalcAllRecipes();
+    init();
   };
   r.readAsText(f);
 }
