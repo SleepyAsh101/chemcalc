@@ -4,85 +4,56 @@
 <meta charset="UTF-8">
 <title>SCP Chemistry Calculator — Yuri Chimp</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <style>
-body {
-  background:#0c0c0c;
-  color:#eee;
-  font-family:Arial;
-  padding:20px;
-}
-h1,h2 {margin-top:0}
-.box {
-  background:#141414;
-  border:1px solid #333;
-  border-radius:8px;
-  padding:15px;
-  margin-bottom:15px;
-}
-input,select,button {
-  background:#1f1f1f;
-  color:#eee;
-  border:1px solid #444;
-  padding:6px;
-  border-radius:4px;
-}
-button {cursor:pointer}
-button:hover {background:#2a2a2a}
-table {width:100%;border-collapse:collapse}
-td,th {border-bottom:1px solid #333;padding:6px}
-.small {color:#aaa;font-size:12px}
-.flex {display:flex;gap:10px;flex-wrap:wrap}
+body{background:#0c0c0c;color:#eee;font-family:Arial;padding:20px}
+h1,h2{margin-top:0}
+.box{background:#141414;border:1px solid #333;border-radius:8px;padding:15px;margin-bottom:15px}
+input,select,button{background:#1f1f1f;color:#eee;border:1px solid #444;padding:6px;border-radius:4px}
+button{cursor:pointer}
+button:hover{background:#2a2a2a}
+table{width:100%;border-collapse:collapse}
+td,th{border-bottom:1px solid #333;padding:6px}
+.small{color:#aaa;font-size:12px}
+.flex{display:flex;gap:10px;flex-wrap:wrap}
 </style>
 </head>
 
 <body>
-
 <h1>SCP Chemistry Calculator — Yuri Chimp</h1>
 
-<!-- CHEMICAL DATABASE -->
 <div class="box">
 <h2>Chemicals ($ / L)</h2>
 <table id="chemTable"></table>
 <button onclick="addChemical()">Add Chemical</button>
 </div>
 
-<!-- RECIPE BUILDER -->
 <div class="box">
 <h2>Recipe Builder</h2>
-
 <div class="flex">
 <input id="rName" placeholder="Output Chemical Name">
 <input id="rYield" type="number" step="0.01" placeholder="Yield %">
 </div>
-
 <div class="flex" style="margin-top:10px">
 <input list="chemList" id="chemA" placeholder="Component A">
 <input id="amtA" type="number" placeholder="Liters">
 <input list="chemList" id="chemB" placeholder="Component B">
 <input id="amtB" type="number" placeholder="Liters">
 </div>
-
 <datalist id="chemList"></datalist>
-
 <button onclick="calculate()" style="margin-top:10px">Calculate</button>
 <button onclick="saveRecipe()">Save Recipe</button>
-
 <div id="output" class="small" style="margin-top:10px"></div>
 </div>
 
-<!-- RECIPES -->
 <div class="box">
 <h2>Recipes</h2>
 <select id="savedRecipes"></select>
 <button onclick="loadRecipe()">Load</button>
-<button onclick="deleteRecipe()">Delete</button>
-<br><br>
+<button onclick="deleteRecipe()">Delete</button><br><br>
 <button onclick="exportRecipes()">Export Recipes</button>
 <input type="file" onchange="importRecipes(event)">
 </div>
 
-<!-- REQUIREMENTS -->
 <div class="box">
 <h2>Recipe Requirements</h2>
 <select id="reqRecipe"></select>
@@ -91,15 +62,12 @@ td,th {border-bottom:1px solid #333;padding:6px}
 <div id="reqOutput" class="small" style="margin-top:10px"></div>
 </div>
 
-<!-- RESET -->
 <div class="box">
-<button onclick="resetAll()" style="color:#ff6b6b;">
-RESET ALL (FACTORY DEFAULT)
-</button>
+<button onclick="resetAll()" style="color:#ff6b6b">RESET ALL (FACTORY DEFAULT)</button>
 </div>
 
 <script>
-/* ================= DATA ================= */
+/* ===== CHEMICALS ===== */
 let chemicals = JSON.parse(localStorage.getItem("chemDB")) || {
   "2-Napthol":250,"Acetic Anhydride":350,"Acetone":500,"AMN-A103":1500,
   "Amino Acid":300,"Amnesium":3000,"Anhydride":250,
@@ -118,200 +86,113 @@ let chemicals = JSON.parse(localStorage.getItem("chemDB")) || {
   "Unstable Quantum Matter":3000,"Ventanyl":1000,"Water":100
 };
 
+/* ===== DEFAULT RECIPES ===== */
 let defaultRecipes = {
-  "AMN-B112": { "a": "AMN-A103", "b": "Amnesium", "la": 1, "lb": 1, "y": 0.499 },
-  "Rubidol R-33": { "a": "2-Napthol", "b": "Methyltestonerone", "la": 1, "lb": 1, "y": 0.7485 },
-  "Potent Duloxetine": { "a": "Duloxetine", "b": "Rubidol R-33", "la": 1, "lb": 1, "y": 0.399 },
-  "AMN-C227": { "a": "AMN-B112", "b": "Potent Duloxetine", "la": 1, "lb": 1, "y": 0.496 },
-  "Rubidolbenotine": { "a": "Betonine", "b": "Rubidol R-33", "la": 1, "lb": 1, "y": 0.48 },
-  "AMN-D045": { "a": "Rubidolbenotine", "b": "AMN-C227", "la": 1, "lb": 1, "y": 0.398 },
-  "Epilorine": { "a": "Ventanyl", "b": "Chlorine", "la": 1, "lb": 1, "y": 0.498 },
-  "AMN-E269": { "a": "Epilorine", "b": "AMN-D045", "la": 1, "lb": 1, "y": 0.249 },
-  "Liquid Anima": { "a": "SCP-323 Host Blood", "b": "Anomalous Bone Marrow", "la": 1, "lb": 1, "y": 0.48 },
-  "AM-X22": { "a": "Liquid Anima", "b": "O- Blood", "la": 1, "lb": 1, "y": 0.097 },
-  "AMN-F762-R": { "a": "AM-X22", "b": "AMN-E269", "la": 1, "lb": 1, "y": 0.2425 },
-  "Unstable Liquid Reality": { "a": "Interdimensional Matter", "b": "Decaying Matter", "la": 1, "lb": 1, "y": 0.248 },
-  "Stable Quantum Matter": { "a": "Unstable Quantum Matter", "b": "Anomalous Matter", "la": 1, "lb": 1, "y": 0.582 },
-  "N-HU-23X": { "a": "Unstable Liquid Reality", "b": "Stable Quantum Matter", "la": 1, "lb": 1, "y": 0.24 },
-  "Y-Blocker": { "a": "Unstable Liquid Reality", "b": "Brodamide", "la": 1, "lb": 1, "y": 0.62 },
-  "Low Grade Ami-Blocker": { "a": "Y-Blocker", "b": "Amnesium", "la": 1, "lb": 1, "y": 0.24 },
-  "High Grade Ami-Blocker": { "a": "Low Grade Ami-Blocker", "b": "SCP-096 Genome", "la": 1, "lb": 1, "y": 0.24 },
-  "MN-06": { "a": "High Grade Ami-Blocker", "b": "SCP-008-2 Blood", "la": 1, "lb": 1, "y": 0.2425 },
-  "Impure MN-X09-07": { "a": "MN-06", "b": "AMN-F762-R", "la": 1, "lb": 1, "y": 0.192 },
-  "Pure MN-X09-07": { "a": "N-HU-23X", "b": "Impure MN-X09-07", "la": 1, "lb": 1, "y": 0.0495 }
+  "AMN-B112":{"a":"AMN-A103","b":"Amnesium","la":1,"lb":1,"y":0.499},
+  "Rubidol R-33":{"a":"2-Napthol","b":"Methyltestonerone","la":1,"lb":1,"y":0.7485},
+  "Potent Duloxetine":{"a":"Duloxetine","b":"Rubidol R-33","la":1,"lb":1,"y":0.399},
+  "AMN-C227":{"a":"AMN-B112","b":"Potent Duloxetine","la":1,"lb":1,"y":0.496},
+  "Rubidolbenotine":{"a":"Betonine","b":"Rubidol R-33","la":1,"lb":1,"y":0.48},
+  "AMN-D045":{"a":"Rubidolbenotine","b":"AMN-C227","la":1,"lb":1,"y":0.398},
+  "Epilorine":{"a":"Ventanyl","b":"Chlorine","la":1,"lb":1,"y":0.498},
+  "AMN-E269":{"a":"Epilorine","b":"AMN-D045","la":1,"lb":1,"y":0.249},
+  "Liquid Anima":{"a":"SCP-323 Host Blood","b":"Anomalous Bone Marrow","la":1,"lb":1,"y":0.48},
+  "AM-X22":{"a":"Liquid Anima","b":"O- Blood","la":1,"lb":1,"y":0.097},
+  "AMN-F762-R":{"a":"AM-X22","b":"AMN-E269","la":1,"lb":1,"y":0.2425},
+  "Unstable Liquid Reality":{"a":"Interdimensional Matter","b":"Decaying Matter","la":1,"lb":1,"y":0.248},
+  "Stable Quantum Matter":{"a":"Unstable Quantum Matter","b":"Anomalous Matter","la":1,"lb":1,"y":0.582},
+  "N-HU-23X":{"a":"Unstable Liquid Reality","b":"Stable Quantum Matter","la":1,"lb":1,"y":0.24},
+  "Y-Blocker":{"a":"Unstable Liquid Reality","b":"Brodamide","la":1,"lb":1,"y":0.62},
+  "Low Grade Ami-Blocker":{"a":"Y-Blocker","b":"Amnesium","la":1,"lb":1,"y":0.24},
+  "High Grade Ami-Blocker":{"a":"Low Grade Ami-Blocker","b":"SCP-096 Genome","la":1,"lb":1,"y":0.24},
+  "MN-06":{"a":"High Grade Ami-Blocker","b":"SCP-008-2 Blood","la":1,"lb":1,"y":0.2425},
+  "Impure MN-X09-07":{"a":"MN-06","b":"AMN-F762-R","la":1,"lb":1,"y":0.192},
+  "Pure MN-X09-07":{"a":"N-HU-23X","b":"Impure MN-X09-07","la":1,"lb":1,"y":0.0495}
 };
 
 let recipes = JSON.parse(localStorage.getItem("recipes")) || structuredClone(defaultRecipes);
 
-
-/* ================= INIT ================= */
+/* ===== INIT & BOOTSTRAP ===== */
+function bootstrapRecipesToChemicals(){
+  for(let r in recipes){
+    let p = calcRecipePrice(r);
+    if(p!=null && !isNaN(p)) chemicals[r]=p;
+  }
+  saveChemDB();
+}
 function init(){
-  renderChemTable();
-  renderDatalist();
-  loadRecipeList();
+  bootstrapRecipesToChemicals();
+  renderChemTable(); renderDatalist(); loadRecipeList();
   reqRecipe.innerHTML = Object.keys(recipes).map(r=>`<option>${r}</option>`).join("");
 }
 init();
 
-/* ================= CHEM TABLE ================= */
+/* ===== UI / LOGIC ===== */
 function renderChemTable(){
-  let html="<tr><th>Name</th><th>$/L</th><th></th></tr>";
+  let h="<tr><th>Name</th><th>$/L</th><th></th></tr>";
   for(let c in chemicals){
-    html+=`<tr>
-      <td>${c}</td>
-      <td><input type="number" value="${chemicals[c]}"
-      onchange="chemicals['${c}']=parseFloat(this.value);saveChemDB();recalcAllRecipes()"></td>
-      <td><button onclick="delete chemicals['${c}'];saveChemDB();init()">X</button></td>
-    </tr>`;
+    h+=`<tr><td>${c}</td>
+    <td><input type="number" value="${chemicals[c]}"
+    onchange="chemicals['${c}']=parseFloat(this.value);saveChemDB();recalcAllRecipes()"></td>
+    <td><button onclick="delete chemicals['${c}'];saveChemDB();init()">X</button></td></tr>`;
   }
-  chemTable.innerHTML=html;
+  chemTable.innerHTML=h;
 }
+function renderDatalist(){ chemList.innerHTML=Object.keys(chemicals).map(c=>`<option value="${c}">`).join(""); }
+function saveChemDB(){ localStorage.setItem("chemDB",JSON.stringify(chemicals)); }
 
-function addChemical(){
-  let n=prompt("Chemical name:");
-  if(!n)return;
-  chemicals[n]=0;
-  saveChemDB();init();
-}
-
-function saveChemDB(){
-  localStorage.setItem("chemDB",JSON.stringify(chemicals));
-}
-
-/* ================= SEARCH LIST ================= */
-function renderDatalist(){
-  chemList.innerHTML=Object.keys(chemicals)
-    .map(c=>`<option value="${c}">`).join("");
-}
-
-/* ================= CALC ================= */
 function calculate(){
-  let a=chemA.value,b=chemB.value;
-  let la=parseFloat(amtA.value),lb=parseFloat(amtB.value);
-  let y=parseFloat(rYield.value)/100;
-  if(!(a&&b&&la&&lb&&y))return;
-
-  let cost=la*chemicals[a]+lb*chemicals[b];
-  let outL=(la+lb)*y;
-  let perL=cost/outL;
-
-  output.innerHTML=
-    `Total Cost: $${cost.toFixed(2)}<br>
-     Output: ${(outL*1000).toFixed(1)} mL<br>
-     Cost / L: $${perL.toFixed(2)}`;
+  let la=+amtA.value, lb=+amtB.value, y=(+rYield.value)/100;
+  if(!chemA.value||!chemB.value||!la||!lb||!y) return;
+  let cost=la*chemicals[chemA.value]+lb*chemicals[chemB.value];
+  let out=(la+lb)*y;
+  output.innerHTML=`Total Cost: $${cost.toFixed(2)}<br>Output: ${(out*1000).toFixed(1)} mL<br>Cost / L: $${(cost/out).toFixed(2)}`;
 }
 
-/* ================= RECIPES ================= */
 function saveRecipe(){
-  let name=rName.value;
-  if(!name)return alert("Output name required");
-
-  let a=chemA.value,b=chemB.value;
-  let la=parseFloat(amtA.value),lb=parseFloat(amtB.value);
-  let y=parseFloat(rYield.value)/100;
-
-  recipes[name]={a,b,la,lb,y};
-  chemicals[name]=calcRecipePrice(name);
-
-  saveChemDB();
-  localStorage.setItem("recipes",JSON.stringify(recipes));
-  init();
+  let y=(+rYield.value)/100;
+  recipes[rName.value]={a:chemA.value,b:chemB.value,la:+amtA.value,lb:+amtB.value,y};
+  chemicals[rName.value]=calcRecipePrice(rName.value);
+  saveChemDB(); localStorage.setItem("recipes",JSON.stringify(recipes)); init();
 }
-
-function loadRecipe(){
-  let r=recipes[savedRecipes.value];
-  if(!r)return;
-  chemA.value=r.a; chemB.value=r.b;
-  amtA.value=r.la; amtB.value=r.lb;
-  rYield.value=r.y*100;
+function loadRecipe(){ let r=recipes[savedRecipes.value]; if(!r)return;
+  chemA.value=r.a; chemB.value=r.b; amtA.value=r.la; amtB.value=r.lb; rYield.value=r.y*100;
 }
+function deleteRecipe(){ delete recipes[savedRecipes.value]; localStorage.setItem("recipes",JSON.stringify(recipes)); init(); }
+function loadRecipeList(){ savedRecipes.innerHTML=Object.keys(recipes).map(r=>`<option>${r}</option>`).join(""); }
 
-function deleteRecipe(){
-  delete recipes[savedRecipes.value];
-  localStorage.setItem("recipes",JSON.stringify(recipes));
-  init();
+function resolveRecipe(n,l,t){ let r=recipes[n];
+  if(!r){ t[n]=(t[n]||0)+l; return; }
+  let out=(r.la+r.lb)*r.y, b=l/out;
+  resolveRecipe(r.a,r.la*b,t); resolveRecipe(r.b,r.lb*b,t);
 }
-
-function loadRecipeList(){
-  savedRecipes.innerHTML=Object.keys(recipes)
-    .map(r=>`<option>${r}</option>`).join("");
-}
-
-/* ================= REQUIREMENTS ================= */
 function showRequirements(){
-  let name=reqRecipe.value;
-  let target=parseFloat(reqAmount.value);
-  if(!recipes[name]||!target)return;
-
-  let totals={};
-  resolveRecipe(name,target,totals);
-
-  let html="<b>Base Components Required:</b><br>";
-  for(let c in totals){
-    html+=`${c}: ${totals[c].toFixed(3)} L<br>`;
-  }
-  reqOutput.innerHTML=html;
+  let t={}; resolveRecipe(reqRecipe.value,+reqAmount.value,t);
+  reqOutput.innerHTML="<b>Base Components Required:</b><br>"+Object.entries(t).map(([c,v])=>`${c}: ${v.toFixed(3)} L`).join("<br>");
 }
 
-function resolveRecipe(name,needed,totals){
-  let r=recipes[name];
-  if(!r){
-    totals[name]=(totals[name]||0)+needed;
-    return;
-  }
-  let out=(r.la+r.lb)*r.y;
-  let batches=needed/out;
-  resolveRecipe(r.a,r.la*batches,totals);
-  resolveRecipe(r.b,r.lb*batches,totals);
-}
-
-/* ================= PRICE PROPAGATION ================= */
-function recalcAllRecipes(){
-  for(let r in recipes){
-    chemicals[r]=calcRecipePrice(r);
-  }
-  saveChemDB();
-}
-
-function calcRecipePrice(name){
-  let r=recipes[name];
+function calcRecipePrice(n){
+  let r=recipes[n]; if(!r) return chemicals[n]||null;
   let ca=recipes[r.a]?calcRecipePrice(r.a):chemicals[r.a];
   let cb=recipes[r.b]?calcRecipePrice(r.b):chemicals[r.b];
-  let cost=r.la*ca+r.lb*cb;
-  let out=(r.la+r.lb)*r.y;
-  return parseFloat((cost/out).toFixed(2));
+  if(ca==null||cb==null) return null;
+  return +(((r.la*ca+r.lb*cb)/((r.la+r.lb)*r.y)).toFixed(2));
 }
+function recalcAllRecipes(){ for(let r in recipes){ let p=calcRecipePrice(r); if(p!=null) chemicals[r]=p; } saveChemDB(); }
 
-/* ================= IMPORT / EXPORT ================= */
-function exportRecipes(){
-  let d=JSON.stringify(recipes,null,2);
-  let a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([d],{type:"application/json"}));
-  a.download="recipes.json";
-  a.click();
+function exportRecipes(){ let d=JSON.stringify(recipes,null,2);
+  let a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([d],{type:"application/json"}));
+  a.download="recipes.json"; a.click();
 }
-
 function importRecipes(e){
-  let f=e.target.files[0];
-  if(!f)return;
-  let r=new FileReader();
-  r.onload=()=>{
-    Object.assign(recipes,JSON.parse(r.result));
-    localStorage.setItem("recipes",JSON.stringify(recipes));
-    recalcAllRecipes();
-    init();
-  };
-  r.readAsText(f);
+  let r=new FileReader(); r.onload=()=>{ Object.assign(recipes,JSON.parse(r.result));
+  localStorage.setItem("recipes",JSON.stringify(recipes)); recalcAllRecipes(); init(); };
+  r.readAsText(e.target.files[0]);
 }
-
-/* ================= RESET ================= */
 function resetAll(){
-  if(!confirm("This will DELETE all recipes and reset chemicals to defaults.\nThis cannot be undone.")) return;
-  localStorage.removeItem("recipes");
-  localStorage.removeItem("chemDB");
-  location.reload();
+  if(!confirm("This will DELETE all recipes and reset chemicals to defaults.\nThis cannot be undone."))return;
+  localStorage.removeItem("recipes"); localStorage.removeItem("chemDB"); location.reload();
 }
 </script>
-
 </body>
 </html>
