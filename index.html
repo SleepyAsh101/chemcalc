@@ -7,54 +7,32 @@
 
 <style>
 body {
-  margin: 0;
-  padding: 20px;
-  background: #0c0c0c;
-  color: #eaeaea;
-  font-family: Arial, Helvetica, sans-serif;
+  background:#0c0c0c;
+  color:#eee;
+  font-family:Arial;
+  padding:20px;
 }
-h1, h2 {
-  margin-top: 0;
-}
+h1,h2 {margin-top:0}
 .box {
-  background: #141414;
-  border: 1px solid #333;
-  border-radius: 8px;
-  padding: 15px;
-  margin-bottom: 15px;
+  background:#141414;
+  border:1px solid #333;
+  border-radius:8px;
+  padding:15px;
+  margin-bottom:15px;
 }
-input, select, button {
-  background: #1f1f1f;
-  color: #eee;
-  border: 1px solid #444;
-  padding: 6px;
-  border-radius: 4px;
+input,button {
+  background:#1f1f1f;
+  color:#eee;
+  border:1px solid #444;
+  padding:6px;
+  border-radius:4px;
 }
-button {
-  cursor: pointer;
-}
-button:hover {
-  background: #2a2a2a;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-}
-th, td {
-  border-bottom: 1px solid #333;
-  padding: 6px;
-  text-align: left;
-}
-.small {
-  font-size: 12px;
-  color: #aaa;
-}
-.flex {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
+button {cursor:pointer}
+button:hover {background:#2a2a2a}
+table {width:100%;border-collapse:collapse}
+td,th {border-bottom:1px solid #333;padding:6px}
+.small {color:#aaa;font-size:12px}
+.flex {display:flex;gap:10px;flex-wrap:wrap}
 </style>
 </head>
 
@@ -64,7 +42,7 @@ th, td {
 
 <!-- CHEMICAL DATABASE -->
 <div class="box">
-<h2>Chemical Prices ($ / Liter)</h2>
+<h2>Chemicals ($ / L)</h2>
 <table id="chemTable"></table>
 <button onclick="addChemical()">Add Chemical</button>
 </div>
@@ -74,162 +52,206 @@ th, td {
 <h2>Recipe Builder</h2>
 
 <div class="flex">
-<input id="rName" placeholder="Recipe Name">
+<input id="rName" placeholder="Output Chemical Name">
 <input id="rYield" type="number" step="0.01" placeholder="Yield %">
 </div>
 
-<div class="flex" style="margin-top:10px;">
-<select id="chemA"></select>
+<div class="flex" style="margin-top:10px">
+<input list="chemList" id="chemA" placeholder="Component A">
 <input id="amtA" type="number" placeholder="Liters">
-<select id="chemB"></select>
+<input list="chemList" id="chemB" placeholder="Component B">
 <input id="amtB" type="number" placeholder="Liters">
 </div>
 
-<button style="margin-top:10px;" onclick="calculate()">Calculate</button>
-<button style="margin-top:10px;" onclick="saveRecipe()">Save Recipe</button>
+<datalist id="chemList"></datalist>
 
-<div id="output" class="small" style="margin-top:10px;"></div>
+<button onclick="calculate()" style="margin-top:10px">Calculate</button>
+<button onclick="saveRecipe()">Save Recipe</button>
+
+<div id="output" class="small" style="margin-top:10px"></div>
 </div>
 
-<!-- SAVED RECIPES -->
+<!-- RECIPE MANAGEMENT -->
 <div class="box">
-<h2>Saved Recipes</h2>
+<h2>Recipes</h2>
 <select id="savedRecipes"></select>
 <button onclick="loadRecipe()">Load</button>
 <button onclick="deleteRecipe()">Delete</button>
+<br><br>
+<button onclick="exportRecipes()">Export Recipes</button>
+<input type="file" onchange="importRecipes(event)">
 </div>
 
 <script>
-/* =======================
-   DATA
-======================= */
+/* ================= DATA ================= */
 let chemicals = JSON.parse(localStorage.getItem("chemDB")) || {
-  "Decaying Matter": 3000,
-  "Interdimensional Matter": 2000,
+  "2-Napthol": 250,
+  "Acetic Anhydride": 350,
+  "Acetone": 500,
+  "AMN-A103": 1500,
+  "Amino Acid": 300,
+  "Amnesium": 3000,
+  "Anhydride": 250,
+  "Anomalous Bone Marrow": 3500,
   "Anomalous Matter": 1000,
+  "Betonine": 1000,
+  "Brodamine": 450,
+  "Calcium": 750,
+  "Chlorine": 750,
+  "Citizol-Q": 2000,
+  "Crystalline Blood": 2500,
+  "Decaying Matter": 3000,
+  "Dionized Water": 150,
+  "Duloxetine": 250,
+  "Ethanol": 500,
+  "Immortal Flesh": 3500,
+  "Interdimensional Matter": 2000,
+  "Methyltestonerone": 300,
+  "O- Blood": 2500,
+  "Orange goop": 800,
+  "Potassium": 200,
+  "Progesterone": 300,
+  "Propionic Acid": 450,
+  "Radioactive Fluid": 1000,
+  "Salicyclic Acid": 450,
+  "SCP-008-2 Blood": 15000,
+  "SCP-096 Genome": 3000,
+  "SCP-323 Host Blood": 3000,
+  "SCP-457 Carbon": 1000,
+  "SCP-860-2 Blood": 1500,
+  "SCP-9000 Infectious Sample": 1500,
+  "SCP-966 Blood": 1500,
+  "SCP-966 Skin": 2000,
+  "Setraline": 500,
+  "Sodium Chloride": 100,
+  "Static Fluid": 1000,
+  "Sulfur": 500,
   "Unstable Quantum Matter": 3000,
-  "Amnesium": 3000
+  "Ventanyl": 1000,
+  "Water": 100
 };
 
 let recipes = JSON.parse(localStorage.getItem("recipes")) || {};
 
-/* =======================
-   INIT
-======================= */
-function init() {
+/* ================= INIT ================= */
+function init(){
   renderChemTable();
-  updateSelects();
+  renderDatalist();
   loadRecipeList();
 }
 init();
 
-/* =======================
-   CHEM TABLE
-======================= */
-function renderChemTable() {
-  let t = "<tr><th>Name</th><th>$/L</th><th></th></tr>";
-  for (let c in chemicals) {
-    t += `<tr>
+/* ================= CHEM TABLE ================= */
+function renderChemTable(){
+  let html="<tr><th>Name</th><th>$/L</th><th></th></tr>";
+  for(let c in chemicals){
+    html+=`<tr>
       <td>${c}</td>
-      <td><input type="number" value="${chemicals[c]}" onchange="updatePrice('${c}',this.value)"></td>
-      <td><button onclick="removeChemical('${c}')">X</button></td>
+      <td><input type="number" value="${chemicals[c]}" onchange="chemicals['${c}']=this.value;saveChemDB()"></td>
+      <td><button onclick="delete chemicals['${c}'];saveChemDB();init()">X</button></td>
     </tr>`;
   }
-  document.getElementById("chemTable").innerHTML = t;
+  chemTable.innerHTML=html;
 }
 
-function updatePrice(name, val) {
-  chemicals[name] = parseFloat(val);
-  saveChemDB();
+function addChemical(){
+  let n=prompt("Chemical name:");
+  if(!n)return;
+  chemicals[n]=0;
+  saveChemDB();init();
 }
 
-function addChemical() {
-  let name = prompt("Chemical name:");
-  if (!name) return;
-  chemicals[name] = 0;
-  saveChemDB();
-  init();
+function saveChemDB(){
+  localStorage.setItem("chemDB",JSON.stringify(chemicals));
 }
 
-function removeChemical(name) {
-  delete chemicals[name];
-  saveChemDB();
-  init();
+/* ================= SEARCH LIST ================= */
+function renderDatalist(){
+  chemList.innerHTML=Object.keys(chemicals)
+    .map(c=>`<option value="${c}">`).join("");
 }
 
-function saveChemDB() {
-  localStorage.setItem("chemDB", JSON.stringify(chemicals));
-}
+/* ================= CALC ================= */
+function calculate(){
+  let a=chemA.value,b=chemB.value;
+  let la=parseFloat(amtA.value),lb=parseFloat(amtB.value);
+  let y=parseFloat(rYield.value)/100;
+  if(!(a&&b&&la&&lb&&y))return;
 
-/* =======================
-   SELECTS
-======================= */
-function updateSelects() {
-  let opts = Object.keys(chemicals)
-    .map(c => `<option>${c}</option>`).join("");
-  chemA.innerHTML = opts;
-  chemB.innerHTML = opts;
-}
+  let cost=la*chemicals[a]+lb*chemicals[b];
+  let outL=(la+lb)*y;
+  let perL=cost/outL;
 
-/* =======================
-   CALCULATION
-======================= */
-function calculate() {
-  let a = chemA.value;
-  let b = chemB.value;
-  let la = parseFloat(amtA.value);
-  let lb = parseFloat(amtB.value);
-  let y = parseFloat(rYield.value) / 100;
-
-  if (!a || !b || !la || !lb || !y) return;
-
-  let cost = la * chemicals[a] + lb * chemicals[b];
-  let outputL = (la + lb) * y;
-  let costPerL = cost / outputL;
-
-  output.innerHTML =
+  output.innerHTML=
     `Total Cost: $${cost.toFixed(2)}<br>
-     Output: ${(outputL*1000).toFixed(1)} mL<br>
-     Cost / L: $${costPerL.toFixed(2)}`;
+     Output: ${(outL*1000).toFixed(1)} mL<br>
+     Cost / L: $${perL.toFixed(2)}`;
 }
 
-/* =======================
-   RECIPES
-======================= */
-function saveRecipe() {
-  let name = rName.value;
-  if (!name) return alert("Name required");
+/* ================= RECIPES ================= */
+function saveRecipe(){
+  let name=rName.value;
+  if(!name)return alert("Output name required");
 
-  recipes[name] = {
-    a: chemA.value,
-    b: chemB.value,
-    la: amtA.value,
-    lb: amtB.value,
-    y: rYield.value
-  };
-  localStorage.setItem("recipes", JSON.stringify(recipes));
-  loadRecipeList();
+  let a=chemA.value,b=chemB.value;
+  let la=parseFloat(amtA.value),lb=parseFloat(amtB.value);
+  let y=parseFloat(rYield.value)/100;
+
+  let cost=la*chemicals[a]+lb*chemicals[b];
+  let outL=(la+lb)*y;
+  let perL=cost/outL;
+
+  recipes[name]={a,b,la,lb,y};
+
+  // CREATE NEW CHEMICAL FROM RECIPE
+  chemicals[name]=parseFloat(perL.toFixed(2));
+
+  saveChemDB();
+  localStorage.setItem("recipes",JSON.stringify(recipes));
+  init();
 }
 
-function loadRecipeList() {
-  savedRecipes.innerHTML = Object.keys(recipes)
-    .map(r => `<option>${r}</option>`).join("");
+function loadRecipe(){
+  let r=recipes[savedRecipes.value];
+  if(!r)return;
+  chemA.value=r.a;
+  chemB.value=r.b;
+  amtA.value=r.la;
+  amtB.value=r.lb;
+  rYield.value=r.y*100;
 }
 
-function loadRecipe() {
-  let r = recipes[savedRecipes.value];
-  if (!r) return;
-  chemA.value = r.a;
-  chemB.value = r.b;
-  amtA.value = r.la;
-  amtB.value = r.lb;
-  rYield.value = r.y;
-}
-
-function deleteRecipe() {
+function deleteRecipe(){
   delete recipes[savedRecipes.value];
-  localStorage.setItem("recipes", JSON.stringify(recipes));
+  localStorage.setItem("recipes",JSON.stringify(recipes));
   loadRecipeList();
+}
+
+function loadRecipeList(){
+  savedRecipes.innerHTML=Object.keys(recipes)
+    .map(r=>`<option>${r}</option>`).join("");
+}
+
+/* ================= IMPORT / EXPORT ================= */
+function exportRecipes(){
+  let data=JSON.stringify(recipes,null,2);
+  let a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([data],{type:"application/json"}));
+  a.download="recipes.json";
+  a.click();
+}
+
+function importRecipes(e){
+  let f=e.target.files[0];
+  if(!f)return;
+  let r=new FileReader();
+  r.onload=()=>{
+    let imported=JSON.parse(r.result);
+    Object.assign(recipes,imported);
+    localStorage.setItem("recipes",JSON.stringify(recipes));
+    loadRecipeList();
+  };
+  r.readAsText(f);
 }
 </script>
 
