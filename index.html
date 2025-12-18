@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>SCP Chemistry Calculator — Site-65</title>
+<title>SCP Chemistry Calculator — Yuri Chimp</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -38,7 +38,7 @@ td,th {border-bottom:1px solid #333;padding:6px}
 
 <body>
 
-<h1>SCP Chemistry Calculator — Site-65</h1>
+<h1>SCP Chemistry Calculator — Yuri Chimp</h1>
 
 <!-- CHEMICAL DATABASE -->
 <div class="box">
@@ -89,6 +89,13 @@ td,th {border-bottom:1px solid #333;padding:6px}
 <input id="reqAmount" type="number" step="0.01" placeholder="Target Output (L)">
 <button onclick="showRequirements()">Show Requirements</button>
 <div id="reqOutput" class="small" style="margin-top:10px"></div>
+</div>
+
+<!-- RESET -->
+<div class="box">
+<button onclick="resetAll()" style="color:#ff6b6b;">
+RESET ALL (FACTORY DEFAULT)
+</button>
 </div>
 
 <script>
@@ -271,6 +278,14 @@ function importRecipes(e){
     init();
   };
   r.readAsText(f);
+}
+
+/* ================= RESET ================= */
+function resetAll(){
+  if(!confirm("This will DELETE all recipes and reset chemicals to defaults.\nThis cannot be undone.")) return;
+  localStorage.removeItem("recipes");
+  localStorage.removeItem("chemDB");
+  location.reload();
 }
 </script>
 
