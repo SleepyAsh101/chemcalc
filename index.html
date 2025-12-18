@@ -118,7 +118,31 @@ let chemicals = JSON.parse(localStorage.getItem("chemDB")) || {
   "Unstable Quantum Matter":3000,"Ventanyl":1000,"Water":100
 };
 
-let recipes = JSON.parse(localStorage.getItem("recipes")) || {};
+let defaultRecipes = {
+  "AMN-B112": { "a": "AMN-A103", "b": "Amnesium", "la": 1, "lb": 1, "y": 0.499 },
+  "Rubidol R-33": { "a": "2-Napthol", "b": "Methyltestonerone", "la": 1, "lb": 1, "y": 0.7485 },
+  "Potent Duloxetine": { "a": "Duloxetine", "b": "Rubidol R-33", "la": 1, "lb": 1, "y": 0.399 },
+  "AMN-C227": { "a": "AMN-B112", "b": "Potent Duloxetine", "la": 1, "lb": 1, "y": 0.496 },
+  "Rubidolbenotine": { "a": "Betonine", "b": "Rubidol R-33", "la": 1, "lb": 1, "y": 0.48 },
+  "AMN-D045": { "a": "Rubidolbenotine", "b": "AMN-C227", "la": 1, "lb": 1, "y": 0.398 },
+  "Epilorine": { "a": "Ventanyl", "b": "Chlorine", "la": 1, "lb": 1, "y": 0.498 },
+  "AMN-E269": { "a": "Epilorine", "b": "AMN-D045", "la": 1, "lb": 1, "y": 0.249 },
+  "Liquid Anima": { "a": "SCP-323 Host Blood", "b": "Anomalous Bone Marrow", "la": 1, "lb": 1, "y": 0.48 },
+  "AM-X22": { "a": "Liquid Anima", "b": "O- Blood", "la": 1, "lb": 1, "y": 0.097 },
+  "AMN-F762-R": { "a": "AM-X22", "b": "AMN-E269", "la": 1, "lb": 1, "y": 0.2425 },
+  "Unstable Liquid Reality": { "a": "Interdimensional Matter", "b": "Decaying Matter", "la": 1, "lb": 1, "y": 0.248 },
+  "Stable Quantum Matter": { "a": "Unstable Quantum Matter", "b": "Anomalous Matter", "la": 1, "lb": 1, "y": 0.582 },
+  "N-HU-23X": { "a": "Unstable Liquid Reality", "b": "Stable Quantum Matter", "la": 1, "lb": 1, "y": 0.24 },
+  "Y-Blocker": { "a": "Unstable Liquid Reality", "b": "Brodamide", "la": 1, "lb": 1, "y": 0.62 },
+  "Low Grade Ami-Blocker": { "a": "Y-Blocker", "b": "Amnesium", "la": 1, "lb": 1, "y": 0.24 },
+  "High Grade Ami-Blocker": { "a": "Low Grade Ami-Blocker", "b": "SCP-096 Genome", "la": 1, "lb": 1, "y": 0.24 },
+  "MN-06": { "a": "High Grade Ami-Blocker", "b": "SCP-008-2 Blood", "la": 1, "lb": 1, "y": 0.2425 },
+  "Impure MN-X09-07": { "a": "MN-06", "b": "AMN-F762-R", "la": 1, "lb": 1, "y": 0.192 },
+  "Pure MN-X09-07": { "a": "N-HU-23X", "b": "Impure MN-X09-07", "la": 1, "lb": 1, "y": 0.0495 }
+};
+
+let recipes = JSON.parse(localStorage.getItem("recipes")) || structuredClone(defaultRecipes);
+
 
 /* ================= INIT ================= */
 function init(){
