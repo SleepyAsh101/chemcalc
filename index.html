@@ -641,6 +641,41 @@ if(localStorage.getItem("recoveredYieldsVersion")!=="1"){
   localStorage.setItem("recoveredYieldsVersion","1");
 }
 
+
+/* Normalize duplicate names before calculating or displaying data. */
+function canonicalName(name){
+  const trimmed=String(name).trim();
+  const key=trimmed.toLowerCase();
+  if(key==="orange goop")return "Orange goop";
+  if(key==="diazapam"||key==="diazepam")return "Diazepam";
+  const known=[...Object.keys(defaultRecipes),...Object.keys(chemicals)];
+  return known.find(n=>n===trimmed)||known.find(n=>n.toLowerCase()===key)||trimmed;
+}
+function normalizeNames(){
+  const mergedChemicals={};
+  // Canonical spelling wins; otherwise retain an existing usable value.
+  for(const [name,value] of Object.entries(chemicals)){
+    const canonical=canonicalName(name);
+    if(!(canonical in mergedChemicals)||name===canonical||mergedChemicals[canonical]==null)
+      mergedChemicals[canonical]=value;
+  }
+  chemicals=mergedChemicals;
+  const mergedRecipes={};
+  for(const [name,recipe] of Object.entries(recipes)){
+    const canonical=canonicalName(name);
+    const normalized={...recipe,a:canonicalName(recipe.a),b:canonicalName(recipe.b)};
+    if(!(canonical in mergedRecipes)||name===canonical)mergedRecipes[canonical]=normalized;
+  }
+  recipes=mergedRecipes;
+  localStorage.setItem("recipes",JSON.stringify(recipes));
+  saveChemDB();
+}
+if(localStorage.getItem("nameCleanupVersion")!=="1"){
+  localStorage.setItem("beforeNameCleanup",JSON.stringify({chemicals,recipes}));
+  localStorage.setItem("nameCleanupVersion","1");
+}
+normalizeNames();
+
 /* ===== INIT & BOOTSTRAP ===== */
 function bootstrapRecipesToChemicals(){
   for(const r of Object.values(recipes))for(const n of [r.a,r.b])if(!(n in chemicals))chemicals[n]=null;
@@ -651,6 +686,7 @@ function bootstrapRecipesToChemicals(){
   saveChemDB();
 }
 function init(){
+  normalizeNames();
   bootstrapRecipesToChemicals();
   renderChemTable(); renderDatalist(); loadRecipeList();
   recipeCount.textContent = Object.keys(recipes).length + " FORMULAS";
@@ -694,7 +730,7 @@ function addChemical(){
   const name=prompt("Chemical name:"); if(!name||!name.trim())return;
   const value=prompt("Purchase price per liter:"); if(value===null)return;
   const price=Number(value); if(!Number.isFinite(price)||price<0||!value.trim()){alert("Enter a valid price.");return;}
-  chemicals[name.trim()]=price;saveChemDB();init();
+  chemicals[canonicalName(name)]=price;saveChemDB();init();
 }
 
 function escapeHTML(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -726,7 +762,8 @@ function saveRecipe(){
   if(!rName.value.trim()){builderNotice.textContent="Enter an output chemical name before saving.";rName.focus();return;}
   let y=(+rYield.value)/100;
   if(!chemA.value||!chemB.value||+amtA.value<=0||+amtB.value<=0||y<=0||y>1){builderNotice.textContent="Enter both components, positive volumes, and a yield between 0 and 100%.";return;}
-  recipes[rName.value]={a:chemA.value,b:chemB.value,la:+amtA.value,lb:+amtB.value,y,method:rMethod.value,source:"Custom"};
+  rName.value=canonicalName(rName.value);
+  recipes[rName.value]={a:canonicalName(chemA.value),b:canonicalName(chemB.value),la:+amtA.value,lb:+amtB.value,y,method:rMethod.value,source:"Custom"};
   chemicals[rName.value]=calcRecipePrice(rName.value);
   saveChemDB(); localStorage.setItem("recipes",JSON.stringify(recipes)); init();
 }
