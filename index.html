@@ -18,8 +18,8 @@
 <div class="fields"><div><label for="rName">Output chemical name</label><input id="rName" placeholder="e.g. Stable Quantum Matter"></div><div><label for="rYield">Yield (%)</label><input id="rYield" type="number" step="0.01" placeholder="24.8"></div></div>
 <div class="component"><div class="component-title">COMPONENT A</div><div class="fields"><div><label for="chemA">Chemical</label><input list="chemList" id="chemA" placeholder="Search or select chemical"></div><div><label for="amtA">Volume (L)</label><input id="amtA" type="number" step="any" placeholder="1.00"></div></div></div>
 <div class="component"><div class="component-title">COMPONENT B</div><div class="fields"><div><label for="chemB">Chemical</label><input list="chemList" id="chemB" placeholder="Search or select chemical"></div><div><label for="amtB">Volume (L)</label><input id="amtB" type="number" step="any" placeholder="1.00"></div></div></div>
-<datalist id="chemList"></datalist><div class="actions"><button class="primary" onclick="calculate()">Calculate batch ↗</button><button onclick="saveRecipe()">Save recipe</button></div><div id="output" class="result" aria-live="polite"></div><div id="builderNotice" class="small notice" aria-live="polite"></div></section>
-<div><section class="box"><div class="panel-head"><h2><span class="number">02</span>Recipe archive</h2><span class="tag" id="recipeCount"></span></div><label for="savedRecipes">Saved formula</label><div class="toolbar"><select id="savedRecipes"></select><button onclick="loadRecipe()">Load</button><button class="danger" onclick="deleteRecipe()">Delete</button></div><div class="divider"></div><div class="actions"><button onclick="exportRecipes()">↓ Export JSON</button><label class="file-button">↑ Import JSON<input aria-label="Import recipes JSON" type="file" accept=".json,application/json" onchange="importRecipes(event)"></label></div><p class="small" style="margin-top:13px">Recipes and chemical data are saved in this browser.</p></section>
+<div style="margin-top:14px"><label for="rMethod">Crafting method</label><select id="rMethod"><option value="">Unspecified</option><option>Beaker</option><option>Vacuum</option><option>Fire</option><option>Centrifuge</option></select></div><datalist id="chemList"></datalist><div class="actions"><button class="primary" onclick="calculate()">Calculate batch ↗</button><button onclick="saveRecipe()">Save recipe</button></div><div id="output" class="result" aria-live="polite"></div><div id="builderNotice" class="small notice" aria-live="polite"></div></section>
+<div><section class="box"><div class="panel-head"><h2><span class="number">02</span>Recipe archive</h2><span class="tag" id="recipeCount"></span></div><label for="savedRecipes">Saved formula</label><div class="toolbar"><select id="savedRecipes"></select><button onclick="loadRecipe()">Load</button><button class="danger" onclick="deleteRecipe()">Delete</button></div><div class="divider"></div><div class="actions"><button onclick="exportRecipes()">↓ Export JSON</button><label class="file-button">↑ Import JSON<input aria-label="Import recipes JSON" type="file" accept=".json,application/json" onchange="importRecipes(event)"></label></div><p class="small" style="margin-top:13px">Recipes and chemical data are saved in this browser. Chemical Notes is the recipe source; blank yields need confirmation.</p></section>
 <section class="box"><div class="panel-head"><h2><span class="number">03</span>Batch requirements</h2></div><p class="small" style="margin-bottom:18px">Expand a formula into the base components you need.</p><div class="req-fields"><div><label for="reqRecipe">Output recipe</label><select id="reqRecipe"></select></div><div><label for="reqAmount">Target output (L)</label><input id="reqAmount" type="number" step="0.01" placeholder="1.00"></div></div><div class="actions"><button onclick="showRequirements()">Show requirements ↗</button></div><div id="reqOutput" class="result small" aria-live="polite">Choose a formula and enter your target volume.</div></section></div>
 <section class="box full"><div class="panel-head"><h2><span class="number">04</span>Chemical registry <span class="small" id="chemicalCount"></span></h2><input class="search" id="chemicalSearch" aria-label="Search chemical registry" placeholder="Search chemicals…" oninput="filterChemicals()"></div><p class="small">Purchase prices and calculated recipe costs per liter.</p><div class="table-scroll"><table id="chemTable"></table></div><div class="actions"><button onclick="addChemical()">+ Add chemical</button></div></section>
 </main><footer class="footer"><span>SCP-RP / CHEMISTRY DIVISION · LOCAL TERMINAL</span><button class="danger" onclick="resetAll()">Reset to factory defaults</button></footer></div>
@@ -44,36 +44,592 @@ let chemicals = JSON.parse(localStorage.getItem("chemDB")) || {
 };
 
 /* ===== DEFAULT RECIPES ===== */
+const previousDefaults = {"AMN-B112": {"a": "AMN-A103", "b": "Amnesium", "la": 1, "lb": 1, "y": 0.499}, "Rubidol R-33": {"a": "2-Napthol", "b": "Methyltestonerone", "la": 1, "lb": 1, "y": 0.7485}, "Potent Duloxetine": {"a": "Duloxetine", "b": "Rubidol R-33", "la": 1, "lb": 1, "y": 0.399}, "AMN-C227": {"a": "AMN-B112", "b": "Potent Duloxetine", "la": 1, "lb": 1, "y": 0.496}, "Rubidolbenotine": {"a": "Betonine", "b": "Rubidol R-33", "la": 1, "lb": 1, "y": 0.48}, "AMN-D045": {"a": "Rubidolbenotine", "b": "AMN-C227", "la": 1, "lb": 1, "y": 0.398}, "Epilorine": {"a": "Ventanyl", "b": "Chlorine", "la": 1, "lb": 1, "y": 0.498}, "AMN-E269": {"a": "Epilorine", "b": "AMN-D045", "la": 1, "lb": 1, "y": 0.249}, "Liquid Anima": {"a": "SCP-323 Host Blood", "b": "Anomalous Bone Marrow", "la": 1, "lb": 1, "y": 0.48}, "AM-X22": {"a": "Liquid Anima", "b": "O- Blood", "la": 1, "lb": 1, "y": 0.097}, "AMN-F762-R": {"a": "AM-X22", "b": "AMN-E269", "la": 1, "lb": 1, "y": 0.2425}, "Unstable Liquid Reality": {"a": "Interdimensional Matter", "b": "Decaying Matter", "la": 1, "lb": 1, "y": 0.248}, "Stable Quantum Matter": {"a": "Unstable Quantum Matter", "b": "Anomalous Matter", "la": 1, "lb": 1, "y": 0.582}, "N-HU-23X": {"a": "Unstable Liquid Reality", "b": "Stable Quantum Matter", "la": 1, "lb": 1, "y": 0.24}, "Y-Blocker": {"a": "Unstable Liquid Reality", "b": "Brodamide", "la": 1, "lb": 1, "y": 0.62}, "Low Grade Ami-Blocker": {"a": "Y-Blocker", "b": "Amnesium", "la": 1, "lb": 1, "y": 0.24}, "High Grade Ami-Blocker": {"a": "Low Grade Ami-Blocker", "b": "SCP-096 Genome", "la": 1, "lb": 1, "y": 0.24}, "MN-06": {"a": "High Grade Ami-Blocker", "b": "SCP-008-2 Blood", "la": 1, "lb": 1, "y": 0.2425}, "Impure MN-X09-07": {"a": "MN-06", "b": "AMN-F762-R", "la": 1, "lb": 1, "y": 0.192}, "Pure MN-X09-07": {"a": "N-HU-23X", "b": "Impure MN-X09-07", "la": 1, "lb": 1, "y": 0.0495}};
 let defaultRecipes = {
-  "AMN-B112":{"a":"AMN-A103","b":"Amnesium","la":1,"lb":1,"y":0.499},
-  "Rubidol R-33":{"a":"2-Napthol","b":"Methyltestonerone","la":1,"lb":1,"y":0.7485},
-  "Potent Duloxetine":{"a":"Duloxetine","b":"Rubidol R-33","la":1,"lb":1,"y":0.399},
-  "AMN-C227":{"a":"AMN-B112","b":"Potent Duloxetine","la":1,"lb":1,"y":0.496},
-  "Rubidolbenotine":{"a":"Betonine","b":"Rubidol R-33","la":1,"lb":1,"y":0.48},
-  "AMN-D045":{"a":"Rubidolbenotine","b":"AMN-C227","la":1,"lb":1,"y":0.398},
-  "Epilorine":{"a":"Ventanyl","b":"Chlorine","la":1,"lb":1,"y":0.498},
-  "AMN-E269":{"a":"Epilorine","b":"AMN-D045","la":1,"lb":1,"y":0.249},
-  "Liquid Anima":{"a":"SCP-323 Host Blood","b":"Anomalous Bone Marrow","la":1,"lb":1,"y":0.48},
-  "AM-X22":{"a":"Liquid Anima","b":"O- Blood","la":1,"lb":1,"y":0.097},
-  "AMN-F762-R":{"a":"AM-X22","b":"AMN-E269","la":1,"lb":1,"y":0.2425},
-  "Unstable Liquid Reality":{"a":"Interdimensional Matter","b":"Decaying Matter","la":1,"lb":1,"y":0.248},
-  "Stable Quantum Matter":{"a":"Unstable Quantum Matter","b":"Anomalous Matter","la":1,"lb":1,"y":0.582},
-  "N-HU-23X":{"a":"Unstable Liquid Reality","b":"Stable Quantum Matter","la":1,"lb":1,"y":0.24},
-  "Y-Blocker":{"a":"Unstable Liquid Reality","b":"Brodamide","la":1,"lb":1,"y":0.62},
-  "Low Grade Ami-Blocker":{"a":"Y-Blocker","b":"Amnesium","la":1,"lb":1,"y":0.24},
-  "High Grade Ami-Blocker":{"a":"Low Grade Ami-Blocker","b":"SCP-096 Genome","la":1,"lb":1,"y":0.24},
-  "MN-06":{"a":"High Grade Ami-Blocker","b":"SCP-008-2 Blood","la":1,"lb":1,"y":0.2425},
-  "Impure MN-X09-07":{"a":"MN-06","b":"AMN-F762-R","la":1,"lb":1,"y":0.192},
-  "Pure MN-X09-07":{"a":"N-HU-23X","b":"Impure MN-X09-07","la":1,"lb":1,"y":0.0495}
+  "AMN-B112": {
+    "a": "Amnesium",
+    "b": "AMN-A103",
+    "la": 1,
+    "lb": 1,
+    "y": 0.485,
+    "method": "Vacuum",
+    "source": "Chemical Notes",
+    "review": ""
+  },
+  "Rubidol R-33": {
+    "a": "Methyltestonerone",
+    "b": "2-Napthol",
+    "la": 1,
+    "lb": 1,
+    "y": 0.7485,
+    "method": "Beaker",
+    "source": "Chemical Notes",
+    "review": ""
+  },
+  "Potent Duloxetine": {
+    "a": "Rubidol R-33",
+    "b": "Duloxetine",
+    "la": 1,
+    "lb": 1,
+    "y": 0.3982,
+    "method": "Fire",
+    "source": "Chemical Notes",
+    "review": ""
+  },
+  "AMN-C227": {
+    "a": "AMN-B112",
+    "b": "Potent Duloxetine",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Fire",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes"
+  },
+  "Rubidolbenotine": {
+    "a": "Betonine",
+    "b": "Rubidol R-33",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Centrifuge",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes"
+  },
+  "AMN-D045": {
+    "a": "Rubidolbenotine",
+    "b": "AMN-C227",
+    "la": 1,
+    "lb": 1,
+    "y": 0.398,
+    "source": "Previous calculator",
+    "review": "Not fully specified in Chemical Notes; previous formula retained."
+  },
+  "Epilorine": {
+    "a": "Ventanyl",
+    "b": "Chlorine",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Vacuum",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes"
+  },
+  "AMN-E269": {
+    "a": "Epilorine",
+    "b": "AMN-D045",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Vacuum",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes"
+  },
+  "Liquid Anima": {
+    "a": "SCP-323 Host Blood",
+    "b": "Anomalous Bone Marrow",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Centrifuge",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes"
+  },
+  "AM-X22": {
+    "a": "O- Blood",
+    "b": "Liquid Anima",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Vacuum",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes; output example needs confirmation."
+  },
+  "AMN-F762-R": {
+    "a": "AM-X22",
+    "b": "AMN-E269",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Vacuum",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes"
+  },
+  "Unstable Liquid Reality": {
+    "a": "Decaying Matter",
+    "b": "Interdimensional Matter",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Fire",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes"
+  },
+  "Stable Quantum Matter": {
+    "a": "Anomalous Matter",
+    "b": "Unstable Quantum Matter",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Vacuum",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes"
+  },
+  "N-HU-23X": {
+    "a": "Unstable Liquid Reality",
+    "b": "Stable Quantum Matter",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Centrifuge",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes; output example needs confirmation."
+  },
+  "Y-Blocker": {
+    "a": "Unstable Liquid Reality",
+    "b": "Brodamide",
+    "la": 1,
+    "lb": 1,
+    "y": 0.729,
+    "method": "Fire",
+    "source": "Chemical Notes",
+    "review": "Yield column: 72.9%; separate 100 mL \u2192 230 mL note has unclear input volumes."
+  },
+  "Low Grade Ami-Blocker": {
+    "a": "Y-Blocker",
+    "b": "Amnesium",
+    "la": 1,
+    "lb": 1,
+    "y": 0.24,
+    "source": "Previous calculator",
+    "review": "Not fully specified in Chemical Notes; previous formula retained."
+  },
+  "High Grade Ami-Blocker": {
+    "a": "Low Grade Ami-Blocker",
+    "b": "SCP-096 Genome",
+    "la": 1,
+    "lb": 1,
+    "y": 0.24,
+    "source": "Previous calculator",
+    "review": "Not fully specified in Chemical Notes; previous formula retained."
+  },
+  "MN-06": {
+    "a": "High Grade Ami-Blocker",
+    "b": "SCP-008-2 Blood",
+    "la": 1,
+    "lb": 1,
+    "y": 0.2425,
+    "source": "Previous calculator",
+    "review": "Not fully specified in Chemical Notes; previous formula retained."
+  },
+  "Impure MN-X09-07": {
+    "a": "MN-06",
+    "b": "AMN-F762-R",
+    "la": 1,
+    "lb": 1,
+    "y": 0.192,
+    "source": "Previous calculator",
+    "review": "Not fully specified in Chemical Notes; previous formula retained."
+  },
+  "Pure MN-X09-07": {
+    "a": "N-HU-23X",
+    "b": "Impure MN-X09-07",
+    "la": 1,
+    "lb": 1,
+    "y": 0.0495,
+    "source": "Previous calculator",
+    "review": "Not fully specified in Chemical Notes; previous formula retained."
+  },
+  "Amoxicillin": {
+    "a": "Acetone",
+    "b": "Propionic Acid",
+    "la": 1,
+    "lb": 1,
+    "y": 0.48,
+    "method": "Vacuum",
+    "source": "Chemical Notes",
+    "review": ""
+  },
+  "Chlorphenamine": {
+    "a": "Ethanoic Anhydride",
+    "b": "Nurofen",
+    "la": 1,
+    "lb": 1,
+    "y": 0.4972,
+    "method": "Vacuum",
+    "source": "Chemical Notes",
+    "review": ""
+  },
+  "Dextrome": {
+    "a": "Dionized Water",
+    "b": "Duloxetine",
+    "la": 1,
+    "lb": 1,
+    "y": 0.249,
+    "method": "Vacuum",
+    "source": "Chemical Notes",
+    "review": ""
+  },
+  "Erythromycin": {
+    "a": "Anhydride",
+    "b": "Diazapam",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Beaker",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes"
+  },
+  "Fexofenadine": {
+    "a": "Amino Acid",
+    "b": "Setraline",
+    "la": 1,
+    "lb": 1,
+    "y": 0.496,
+    "method": "Vacuum",
+    "source": "Chemical Notes",
+    "review": ""
+  },
+  "Oseltamivir Phosphate": {
+    "a": "Ibuprofen",
+    "b": "Anhydride",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Beaker",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes"
+  },
+  "Ketoprofen": {
+    "a": "Potent Setraline",
+    "b": "Ethanol",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Vacuum",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes"
+  },
+  "Paracetamol": {
+    "a": "Potassium",
+    "b": "Salicyclic Acid",
+    "la": 1,
+    "lb": 1,
+    "y": 0.494,
+    "method": "Beaker",
+    "source": "Chemical Notes",
+    "review": ""
+  },
+  "Acetone": {
+    "a": "Acetic Anhydride",
+    "b": "2-Napthol",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Beaker",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes"
+  },
+  "Aminocalciol": {
+    "a": "Calcium",
+    "b": "Amino Acid",
+    "la": 1,
+    "lb": 1,
+    "y": 0.498,
+    "method": "Beaker",
+    "source": "Chemical Notes",
+    "review": ""
+  },
+  "AMN-A103": {
+    "a": "Setraline",
+    "b": "Amnesium",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Fire",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes"
+  },
+  "Aspirin": {
+    "a": "Anomalous Matter",
+    "b": "Ibuprofen",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Centrifuge",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes"
+  },
+  "Betonine": {
+    "a": "Sulfur",
+    "b": "Brodamide",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Fire",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes"
+  },
+  "Conscientium": {
+    "a": "Interdimensional Matter",
+    "b": "Crystalline Blood",
+    "la": 1,
+    "lb": 1,
+    "y": 0.249,
+    "method": "Vacuum",
+    "source": "Chemical Notes",
+    "review": "Yield column: 24.9%; example implies 24.625%. Method says Vacuum; example says Beaker."
+  },
+  "Corticosteroid": {
+    "a": "Naproxen",
+    "b": "Progesterone",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Vacuum",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes"
+  },
+  "Deuterium": {
+    "a": "Radioactive Fluid",
+    "b": "Water",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Beaker",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes"
+  },
+  "Dianabol": {
+    "a": "Methyltestonerone",
+    "b": "Keto Acid",
+    "la": 1,
+    "lb": 1,
+    "y": 0.3738,
+    "method": "Vacuum",
+    "source": "Chemical Notes",
+    "review": ""
+  },
+  "Diazepam": {
+    "a": "Salicyclic Acid",
+    "b": "2-Napthol",
+    "la": 1,
+    "lb": 1,
+    "y": 0.744,
+    "method": "Fire",
+    "source": "Chemical Notes",
+    "review": ""
+  },
+  "Dionized Water": {
+    "a": "Water",
+    "b": "Anhydride",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Beaker",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes"
+  },
+  "Doctors Cure": {
+    "a": "Calcium",
+    "b": "Human Blood",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Fire",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes"
+  },
+  "Doctors Pestilence": {
+    "a": "Human Blood",
+    "b": "Orange Goop",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Fire",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes"
+  },
+  "Duloxetine": {
+    "a": "Setraline",
+    "b": "Sodium Chloride",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Beaker",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes"
+  },
+  "Epinephrine": {
+    "a": "2-Napthol",
+    "b": "Nurofen",
+    "la": 1,
+    "lb": 1,
+    "y": 0.72,
+    "method": "Centrifuge",
+    "source": "Chemical Notes",
+    "review": ""
+  },
+  "Ethanoic Anhydride": {
+    "a": "Ethanol",
+    "b": "Anhydride",
+    "la": 1,
+    "lb": 1,
+    "y": 0.4985,
+    "method": "Beaker",
+    "source": "Chemical Notes",
+    "review": "Yield column: 49.85%; example implies 49.8%."
+  },
+  "Ibuprofen": {
+    "a": "Propionic Acid",
+    "b": "Salicyclic Acid",
+    "la": 1,
+    "lb": 1,
+    "y": 0.3952,
+    "method": "Fire",
+    "source": "Chemical Notes",
+    "review": ""
+  },
+  "Keto Acid": {
+    "a": "Sodium Chloride",
+    "b": "Dionized Water",
+    "la": 1,
+    "lb": 1,
+    "y": 0.4965,
+    "method": "Beaker",
+    "source": "Chemical Notes",
+    "review": ""
+  },
+  "Marcoline": {
+    "a": "SCP-860-2 Blood",
+    "b": "Betonine",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Fire",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes; output example needs confirmation."
+  },
+  "Naproxen": {
+    "a": "Dionized Water",
+    "b": "2-Napthol",
+    "la": 1,
+    "lb": 1,
+    "y": 0.738,
+    "method": "Beaker",
+    "source": "Chemical Notes",
+    "review": ""
+  },
+  "Nurofen": {
+    "a": "Methyltestonerone",
+    "b": "Dionized Water",
+    "la": 1,
+    "lb": 1,
+    "y": 0.7466,
+    "method": "Vacuum",
+    "source": "Chemical Notes",
+    "review": ""
+  },
+  "Potent Setraline": {
+    "a": "Rubidol R-33",
+    "b": "Setraline",
+    "la": 1,
+    "lb": 1,
+    "y": 0.4905,
+    "method": "Beaker",
+    "source": "Chemical Notes",
+    "review": ""
+  },
+  "Quetiapine": {
+    "a": "Acetone",
+    "b": "Progesterone",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Centrifuge",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes"
+  },
+  "Salicyclic Acid": {
+    "a": "Duloxetine",
+    "b": "Keto Acid",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Beaker",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes"
+  },
+  "Setraline": {
+    "a": "Chlorine",
+    "b": "Propionic Acid",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Beaker",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes"
+  },
+  "Steroids": {
+    "a": "Keto Acid",
+    "b": "2-Napthol",
+    "la": 1,
+    "lb": 1,
+    "y": 0.7395,
+    "method": "Beaker",
+    "source": "Chemical Notes",
+    "review": ""
+  },
+  "Tylenol": {
+    "a": "Aminocalciol",
+    "b": "Ethanoic Anhydride",
+    "la": 1,
+    "lb": 1,
+    "y": 0.495,
+    "method": "Vacuum",
+    "source": "Chemical Notes",
+    "review": ""
+  },
+  "Ventanyl": {
+    "a": "Marcoline",
+    "b": "Water",
+    "la": 1,
+    "lb": 1,
+    "y": null,
+    "method": "Centrifuge",
+    "source": "Chemical Notes",
+    "review": "Missing yield in Chemical Notes"
+  },
+  "Vitamins": {
+    "a": "Keto Acid",
+    "b": "Dianabol",
+    "la": 1,
+    "lb": 1,
+    "y": 0.72,
+    "method": "Centrifuge",
+    "source": "Chemical Notes",
+    "review": ""
+  }
 };
 
 let recipes = JSON.parse(localStorage.getItem("recipes")) || structuredClone(defaultRecipes);
+if(localStorage.getItem("notesVersion") !== "1"){
+  localStorage.setItem("recipesBeforeChemicalNotes",JSON.stringify(recipes));
+  for(const [name,r] of Object.entries(defaultRecipes)){
+    const existing=recipes[name], prior=previousDefaults[name];
+    if(!existing || (prior && ['a','b','la','lb','y'].every(k=>existing[k]===prior[k]))) recipes[name]=structuredClone(r);
+  }
+  localStorage.setItem("recipes",JSON.stringify(recipes));
+  localStorage.setItem("notesVersion","1");
+}
+
 
 /* ===== INIT & BOOTSTRAP ===== */
 function bootstrapRecipesToChemicals(){
+  for(const r of Object.values(recipes))for(const n of [r.a,r.b])if(!(n in chemicals))chemicals[n]=null;
   for(let r in recipes){
     let p = calcRecipePrice(r);
-    if(p!=null && !isNaN(p)) chemicals[r]=p;
+    chemicals[r]=p;
   }
   saveChemDB();
 }
@@ -82,7 +638,7 @@ function init(){
   renderChemTable(); renderDatalist(); loadRecipeList();
   recipeCount.textContent = Object.keys(recipes).length + " FORMULAS";
   chemicalCount.textContent = "(" + Object.keys(chemicals).length + ")";
-  reqRecipe.innerHTML = Object.keys(recipes).map(r=>`<option>${r}</option>`).join("");
+  reqRecipe.innerHTML = Object.keys(recipes).sort().map(r=>`<option value="${escapeHTML(r)}">${escapeHTML(r)}${recipes[r].y==null?" · needs yield":""}</option>`).join("");
 }
 init();
 
@@ -100,24 +656,26 @@ function addChemical(){
   chemicals[name.trim()]=price;saveChemDB();init();
 }
 
+function escapeHTML(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function renderChemTable(){
   let h="<tr><th>Name</th><th>$/L</th><th></th></tr>";
-  for(let c in chemicals){
-    h+=`<tr><td>${c}</td>
-    <td><input type="number" value="${chemicals[c]}"
-    onchange="chemicals['${c}']=parseFloat(this.value);saveChemDB();recalcAllRecipes()"></td>
-    <td><button onclick="delete chemicals['${c}'];saveChemDB();init()">X</button></td></tr>`;
+  for(const c of Object.keys(chemicals).sort()){
+    const key=escapeHTML(JSON.stringify(c)), label=escapeHTML(c), value=chemicals[c];
+    h+=`<tr><td>${label}${recipes[c]?'<br><span class="small">Calculated recipe cost</span>':''}</td><td>`;
+    h+=recipes[c] ? (value==null?'<span class="small">Needs recipe data</span>':Number(value).toLocaleString(undefined,{maximumFractionDigits:2})) :
+      `<input aria-label="Price per liter for ${label}" type="number" value="${value??''}" onchange="chemicals[${key}]=this.value===''?null:Number(this.value);saveChemDB();init()">`;
+    h+=`</td><td><button aria-label="Delete ${label}" onclick="delete chemicals[${key}];saveChemDB();init()">X</button></td></tr>`;
   }
   chemTable.innerHTML=h;filterChemicals();
 }
-function renderDatalist(){ chemList.innerHTML=Object.keys(chemicals).map(c=>`<option value="${c}">`).join(""); }
+function renderDatalist(){ chemList.innerHTML=Object.keys(chemicals).sort().map(c=>`<option value="${escapeHTML(c)}">`).join(""); }
 function saveChemDB(){ localStorage.setItem("chemDB",JSON.stringify(chemicals)); }
 
 function calculate(){
   builderNotice.textContent="";
   let la=+amtA.value, lb=+amtB.value, y=(+rYield.value)/100;
-  if(!chemA.value||!chemB.value||!la||!lb||!y){builderNotice.textContent="Choose both chemicals, volumes, and a yield.";return;}
-  if(chemicals[chemA.value]==null||chemicals[chemB.value]==null){builderNotice.textContent="Select chemicals from the registry.";return;}
+  if(!chemA.value||!chemB.value||la<=0||lb<=0||y<=0||y>1){builderNotice.textContent="Choose both chemicals, volumes, and a yield.";return;}
+  if(chemicals[chemA.value]==null||chemicals[chemB.value]==null){output.innerHTML=`Output: ${((la+lb)*y*1000).toFixed(1)} mL<br>Cost unavailable: a component needs price or recipe data.`;return;}
   let cost=la*chemicals[chemA.value]+lb*chemicals[chemB.value];
   let out=(la+lb)*y;
   output.innerHTML=`Total Cost: $${cost.toFixed(2)}<br>Output: ${(out*1000).toFixed(1)} mL<br>Cost / L: $${(cost/out).toFixed(2)}`;
@@ -126,35 +684,42 @@ function calculate(){
 function saveRecipe(){
   if(!rName.value.trim()){builderNotice.textContent="Enter an output chemical name before saving.";rName.focus();return;}
   let y=(+rYield.value)/100;
-  recipes[rName.value]={a:chemA.value,b:chemB.value,la:+amtA.value,lb:+amtB.value,y};
+  if(!chemA.value||!chemB.value||+amtA.value<=0||+amtB.value<=0||y<=0||y>1){builderNotice.textContent="Enter both components, positive volumes, and a yield between 0 and 100%.";return;}
+  recipes[rName.value]={a:chemA.value,b:chemB.value,la:+amtA.value,lb:+amtB.value,y,method:rMethod.value,source:"Custom"};
   chemicals[rName.value]=calcRecipePrice(rName.value);
   saveChemDB(); localStorage.setItem("recipes",JSON.stringify(recipes)); init();
 }
 function loadRecipe(){ let r=recipes[savedRecipes.value]; if(!r)return;
-  rName.value=savedRecipes.value; builderNotice.textContent="Formula loaded into builder.";
-  chemA.value=r.a; chemB.value=r.b; amtA.value=r.la; amtB.value=r.lb; rYield.value=r.y*100; 
+  rName.value=savedRecipes.value; builderNotice.textContent=(r.source||"Custom")+": "+(r.review||"Formula loaded into builder.");
+  output.innerHTML="";rMethod.value=r.method||"";
+  chemA.value=r.a; chemB.value=r.b; amtA.value=r.la; amtB.value=r.lb; rYield.value=r.y==null?"":+(r.y*100).toFixed(6); 
 }
 function deleteRecipe(){ delete recipes[savedRecipes.value]; localStorage.setItem("recipes",JSON.stringify(recipes)); init(); }
-function loadRecipeList(){ savedRecipes.innerHTML=Object.keys(recipes).map(r=>`<option>${r}</option>`).join(""); }
+function loadRecipeList(){ savedRecipes.innerHTML=Object.keys(recipes).sort().map(r=>`<option value="${escapeHTML(r)}">${escapeHTML(r)}${recipes[r].y==null?" · needs yield":""}</option>`).join(""); }
 
-function resolveRecipe(n,l,t){ let r=recipes[n];
-  if(!r){ t[n]=(t[n]||0)+l; return; }
-  let out=(r.la+r.lb)*r.y, b=l/out;
-  resolveRecipe(r.a,r.la*b,t); resolveRecipe(r.b,r.lb*b,t);
+function resolveRecipe(n,l,t,stack=[]){
+  if(stack.includes(n))throw Error("Circular recipe: "+n);
+  const r=recipes[n];if(!r){t[n]=(t[n]||0)+l;return;}
+  if(!(r.y>0 && r.y<=1 && r.la>0 && r.lb>0))throw Error("Missing or invalid yield/volumes: "+n);
+  const b=l/((r.la+r.lb)*r.y);
+  resolveRecipe(r.a,r.la*b,t,[...stack,n]);resolveRecipe(r.b,r.lb*b,t,[...stack,n]);
 }
 function showRequirements(){
-  let t={}; resolveRecipe(reqRecipe.value,+reqAmount.value,t);
-  reqOutput.innerHTML="<b>Base Components Required:</b><br>"+Object.entries(t).map(([c,v])=>`${c}: ${v.toFixed(3)} L`).join("<br>");
+  try{
+    if(!reqRecipe.value||!(+reqAmount.value>0))throw Error("Choose a recipe and a positive target volume.");
+    const t={};resolveRecipe(reqRecipe.value,+reqAmount.value,t);
+    reqOutput.innerHTML="<b>Base Components Required:</b><br>"+Object.entries(t).map(([c,v])=>`${escapeHTML(c)}: ${v.toFixed(3)} L`).join("<br>");
+  }catch(e){reqOutput.textContent=e.message;}
 }
-
-function calcRecipePrice(n){
-  let r=recipes[n]; if(!r) return chemicals[n]||null;
-  let ca=recipes[r.a]?calcRecipePrice(r.a):chemicals[r.a];
-  let cb=recipes[r.b]?calcRecipePrice(r.b):chemicals[r.b];
-  if(ca==null||cb==null) return null;
-  return +(((r.la*ca+r.lb*cb)/((r.la+r.lb)*r.y)).toFixed(2));
+function calcRecipePrice(n,stack=[]){
+  if(stack.includes(n))return null;
+  const r=recipes[n];if(!r)return chemicals[n]??null;
+  if(!(r.y>0 && r.y<=1 && r.la>0 && r.lb>0))return null;
+  const ca=calcRecipePrice(r.a,[...stack,n]),cb=calcRecipePrice(r.b,[...stack,n]);
+  if(ca==null||cb==null||!Number.isFinite(ca)||!Number.isFinite(cb))return null;
+  return +((r.la*ca+r.lb*cb)/((r.la+r.lb)*r.y)).toFixed(2);
 }
-function recalcAllRecipes(){ for(let r in recipes){ let p=calcRecipePrice(r); if(p!=null) chemicals[r]=p; } saveChemDB(); }
+function recalcAllRecipes(){bootstrapRecipesToChemicals();}
 
 function exportRecipes(){ let d=JSON.stringify(recipes,null,2);
   let a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([d],{type:"application/json"}));
