@@ -685,6 +685,15 @@ if(localStorage.getItem("yBlockerTestVersion")!=="1"){
  localStorage.setItem("yBlockerTestVersion","1");
 }
 
+const measuredAMND045={a:"Rubidolbenotine",b:"AMN-C227",la:1,lb:1,y:0.3965,method:"Fire",source:"In-game test: 1 L + 1 L → 793 mL; no leftovers",review:""};
+defaultRecipes["AMN-D045"]=structuredClone(measuredAMND045);
+if(localStorage.getItem("amnd045TestVersion")!=="1"){
+ localStorage.setItem("amnd045BeforeTest",JSON.stringify(recipes["AMN-D045"]??null));
+ recipes["AMN-D045"]=structuredClone(measuredAMND045);
+ localStorage.setItem("recipes",JSON.stringify(recipes));
+ localStorage.setItem("amnd045TestVersion","1");
+}
+
 /* ===== INIT & BOOTSTRAP ===== */
 function bootstrapRecipesToChemicals(){
   for(const r of Object.values(recipes))for(const n of [r.a,r.b])if(!(n in chemicals))chemicals[n]=null;
@@ -794,7 +803,7 @@ function saveRecipe(){
 function loadRecipe(){ let r=recipes[savedRecipes.value]; if(!r)return;
   rName.value=savedRecipes.value; builderNotice.textContent=(r.source||"Custom")+": "+(r.review||"Formula loaded into builder.");
   output.innerHTML="";rMethod.value=r.method||"";
-  chemA.value=r.a; chemB.value=r.b; amtA.value=r.la; amtB.value=r.lb; rYield.value=r.y==null?"":r.y*100; 
+  chemA.value=r.a; chemB.value=r.b; amtA.value=r.la; amtB.value=r.lb; rYield.value=r.y==null?"":Number((r.y*100).toPrecision(14)); 
 }
 function deleteRecipe(){ delete recipes[savedRecipes.value]; localStorage.setItem("recipes",JSON.stringify(recipes)); init(); }
 function loadRecipeList(){ savedRecipes.innerHTML=Object.keys(recipes).sort().map(r=>`<option value="${escapeHTML(r)}">${escapeHTML(r)}${recipes[r].y==null?" · needs yield":""}</option>`).join(""); }
