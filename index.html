@@ -694,6 +694,15 @@ if(localStorage.getItem("amnd045TestVersion")!=="1"){
  localStorage.setItem("amnd045TestVersion","1");
 }
 
+const measuredDianabol={a:"Methyltestonerone",b:"Keto Acid",la:1,lb:1,y:0.7485,method:"Vacuum",source:"In-game test: 1 L + 1 L → 1497 mL; no leftovers",review:""};
+defaultRecipes.Dianabol=structuredClone(measuredDianabol);
+if(localStorage.getItem("dianabolTestVersion")!=="1"){
+ localStorage.setItem("dianabolBeforeTest",JSON.stringify(recipes.Dianabol??null));
+ recipes.Dianabol=structuredClone(measuredDianabol);
+ localStorage.setItem("recipes",JSON.stringify(recipes));
+ localStorage.setItem("dianabolTestVersion","1");
+}
+
 /* ===== INIT & BOOTSTRAP ===== */
 function bootstrapRecipesToChemicals(){
   for(const r of Object.values(recipes))for(const n of [r.a,r.b])if(!(n in chemicals))chemicals[n]=null;
