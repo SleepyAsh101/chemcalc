@@ -42,7 +42,7 @@ body.terminal-locked{overflow:hidden}
 <div class="component"><div class="component-title">COMPONENT A</div><div class="fields"><div><label for="chemA">Chemical</label><div class="picker-trigger"><input id="chemA" readonly role="combobox" aria-haspopup="dialog" aria-expanded="false" aria-controls="chemicalPicker" placeholder="Choose a chemical…" onclick="openChemicalPicker('chemA')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openChemicalPicker('chemA')}"></div></div><div><label for="amtA">Volume (L)</label><input id="amtA" type="number" step="any" placeholder="1.00"></div></div></div>
 <div class="component"><div class="component-title">COMPONENT B</div><div class="fields"><div><label for="chemB">Chemical</label><div class="picker-trigger"><input id="chemB" readonly role="combobox" aria-haspopup="dialog" aria-expanded="false" aria-controls="chemicalPicker" placeholder="Choose a chemical…" onclick="openChemicalPicker('chemB')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openChemicalPicker('chemB')}"></div></div><div><label for="amtB">Volume (L)</label><input id="amtB" type="number" step="any" placeholder="1.00"></div></div></div>
 <div style="margin-top:14px"><label for="rMethod">Crafting method</label><select disabled id="rMethod"><option value="">Unspecified</option><option>Beaker</option><option>Vacuum</option><option>Fire</option><option>Centrifuge</option></select></div><datalist id="chemList"></datalist><div class="actions"><button class="primary" onclick="calculate()">Calculate batch ↗</button></div><div id="output" class="result" aria-live="polite"></div><div id="builderNotice" class="small notice" aria-live="polite"></div></section>
-<div><section class="box"><div class="panel-head"><h2><span class="number">02</span>Recipe archive</h2><span class="tag" id="recipeCount"></span></div><label for="savedRecipes">Saved formula</label><div class="toolbar"><select id="savedRecipes"></select><button onclick="loadRecipe()">Load</button></div><div class="divider"></div><div class="actions"><button onclick="exportRecipes()">↓ Export JSON</button></div><p class="small" style="margin-top:13px">Recipes and prices are read-only. Updates are maintained in the source code.</p></section>
+<div><section class="box"><div class="panel-head"><h2><span class="number">02</span>Recipe archive</h2><span class="tag" id="recipeCount"></span></div><label for="savedRecipes">Saved formula</label><div class="toolbar"><select id="savedRecipes"></select><button onclick="loadRecipe()">Load</button></div><div class="divider"></div><div class="actions"><button onclick="exportRecipes()">↓ Export JSON</button><button onclick="recoverPreviousRecipes()">Recover previous recipes</button><span id="recoveryNotice" class="small" role="status"></span></div><p class="small" style="margin-top:13px">Recipes and prices are read-only. Updates are maintained in the source code.</p></section>
 <section class="box"><div class="panel-head"><h2><span class="number">03</span>Batch requirements</h2></div><p class="small" style="margin-bottom:18px">Expand a formula into the base components you need.</p><div class="req-fields"><div><label for="reqRecipe">Output recipe</label><select id="reqRecipe"></select></div><div><label for="reqAmount">Target output (L)</label><input id="reqAmount" type="number" step="0.01" placeholder="1.00"></div></div><div class="actions"><button onclick="showRequirements()">Show requirements ↗</button></div><div id="reqOutput" class="result small" aria-live="polite">Choose a formula and enter your target volume.</div></section></div>
 <section class="box full"><div class="panel-head"><h2><span class="number">04</span>Chemical registry <span class="small" id="chemicalCount"></span></h2><input class="search" id="chemicalSearch" aria-label="Search chemical registry" placeholder="Search chemicals…" oninput="filterChemicals()"></div><p class="small">Read-only purchase prices and calculated recipe costs per liter.</p><div class="table-scroll"><table id="chemTable"></table></div><div class="actions"></div></section>
 </main><footer class="footer"><span>SCP-RP / CHEMISTRY DIVISION · LOCAL TERMINAL</span></footer></div>
@@ -786,6 +786,19 @@ function calcRecipePrice(n,stack=[]){
 }
 function recalcAllRecipes(){bootstrapRecipesToChemicals();}
 
+function recoverPreviousRecipes(){
+  const keys=["recipes","recipesBeforeChemicalNotes","recipesBeforeRecoveredYields","beforeNameCleanup"];
+  const snapshots={};
+  for(const key of keys){
+    try{const raw=localStorage.getItem(key);if(raw){const parsed=JSON.parse(raw);snapshots[key]=key==="beforeNameCleanup"?parsed.recipes:parsed;}}catch(e){}
+  }
+  if(!Object.keys(snapshots).length){recoveryNotice.textContent="No previous recipes found in this browser. Try the browser where you saved them.";return;}
+  const blob=new Blob([JSON.stringify(snapshots,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob),link=document.createElement("a");
+  link.href=url;link.download="previous-recipes-recovery.json";link.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  recoveryNotice.textContent="Recovery downloaded. Send this file to restore your custom recipe in the code.";
+}
 function exportRecipes(){ let d=JSON.stringify(recipes,null,2);
   let a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([d],{type:"application/json"}));
   a.download="recipes.json"; a.click();
