@@ -35,17 +35,17 @@ body.terminal-locked{overflow:hidden}
 </form></div>
 <div class="shell" id="terminalContent" inert aria-hidden="true">
 <header class="masthead"><div class="brand"><span class="emblem" aria-hidden="true">◎</span><span>SCP FOUNDATION<br><span class="small">RESEARCH & DEVELOPMENT</span></span></div><span class="status">Laboratory online</span></header>
-<div class="intro"><div><div class="eyebrow">Chemical synthesis terminal / 01</div><h1>Chemistry Calculator</h1><p>Build a formula. Trace its components. Plan your next batch.</p></div><span class="tag">OPERATOR / YURI CHIMP</span></div>
+<div class="intro"><div><div class="eyebrow">Chemical synthesis terminal / 01</div><h1>Chemistry Calculator</h1><p>Select a formula. Trace its components. Plan your next batch.</p></div><span class="tag">OPERATOR / YURI CHIMP</span></div>
 <main class="layout">
-<section class="box"><div class="panel-head"><h2><span class="number">01</span>Recipe builder</h2><span class="tag">SYNTHESIS</span></div>
-<div class="fields"><div><label for="rName">Output chemical name</label><input id="rName" placeholder="e.g. Stable Quantum Matter"></div><div><label for="rYield">Yield (%)</label><input id="rYield" type="number" step="0.01" placeholder="24.8"></div></div>
+<section class="box"><div class="panel-head"><h2><span class="number">01</span>Batch calculator</h2><span class="tag">SYNTHESIS</span></div>
+<div class="fields"><div><label for="rName">Output chemical name</label><input readonly id="rName" placeholder="e.g. Stable Quantum Matter"></div><div><label for="rYield">Yield (%)</label><input readonly id="rYield" type="number" step="0.01" placeholder="24.8"></div></div>
 <div class="component"><div class="component-title">COMPONENT A</div><div class="fields"><div><label for="chemA">Chemical</label><div class="picker-trigger"><input id="chemA" readonly role="combobox" aria-haspopup="dialog" aria-expanded="false" aria-controls="chemicalPicker" placeholder="Choose a chemical…" onclick="openChemicalPicker('chemA')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openChemicalPicker('chemA')}"></div></div><div><label for="amtA">Volume (L)</label><input id="amtA" type="number" step="any" placeholder="1.00"></div></div></div>
 <div class="component"><div class="component-title">COMPONENT B</div><div class="fields"><div><label for="chemB">Chemical</label><div class="picker-trigger"><input id="chemB" readonly role="combobox" aria-haspopup="dialog" aria-expanded="false" aria-controls="chemicalPicker" placeholder="Choose a chemical…" onclick="openChemicalPicker('chemB')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openChemicalPicker('chemB')}"></div></div><div><label for="amtB">Volume (L)</label><input id="amtB" type="number" step="any" placeholder="1.00"></div></div></div>
-<div style="margin-top:14px"><label for="rMethod">Crafting method</label><select id="rMethod"><option value="">Unspecified</option><option>Beaker</option><option>Vacuum</option><option>Fire</option><option>Centrifuge</option></select></div><datalist id="chemList"></datalist><div class="actions"><button class="primary" onclick="calculate()">Calculate batch ↗</button><button onclick="saveRecipe()">Save recipe</button></div><div id="output" class="result" aria-live="polite"></div><div id="builderNotice" class="small notice" aria-live="polite"></div></section>
-<div><section class="box"><div class="panel-head"><h2><span class="number">02</span>Recipe archive</h2><span class="tag" id="recipeCount"></span></div><label for="savedRecipes">Saved formula</label><div class="toolbar"><select id="savedRecipes"></select><button onclick="loadRecipe()">Load</button><button class="danger" onclick="deleteRecipe()">Delete</button></div><div class="divider"></div><div class="actions"><button onclick="exportRecipes()">↓ Export JSON</button><label class="file-button">↑ Import JSON<input aria-label="Import recipes JSON" type="file" accept=".json,application/json" onchange="importRecipes(event)"></label></div><p class="small" style="margin-top:13px">Recipes and chemical data are saved in this browser. Chemical Notes is the recipe source; blank yields need confirmation.</p></section>
+<div style="margin-top:14px"><label for="rMethod">Crafting method</label><select disabled id="rMethod"><option value="">Unspecified</option><option>Beaker</option><option>Vacuum</option><option>Fire</option><option>Centrifuge</option></select></div><datalist id="chemList"></datalist><div class="actions"><button class="primary" onclick="calculate()">Calculate batch ↗</button></div><div id="output" class="result" aria-live="polite"></div><div id="builderNotice" class="small notice" aria-live="polite"></div></section>
+<div><section class="box"><div class="panel-head"><h2><span class="number">02</span>Recipe archive</h2><span class="tag" id="recipeCount"></span></div><label for="savedRecipes">Saved formula</label><div class="toolbar"><select id="savedRecipes"></select><button onclick="loadRecipe()">Load</button></div><div class="divider"></div><div class="actions"><button onclick="exportRecipes()">↓ Export JSON</button></div><p class="small" style="margin-top:13px">Recipes and prices are read-only. Updates are maintained in the source code.</p></section>
 <section class="box"><div class="panel-head"><h2><span class="number">03</span>Batch requirements</h2></div><p class="small" style="margin-bottom:18px">Expand a formula into the base components you need.</p><div class="req-fields"><div><label for="reqRecipe">Output recipe</label><select id="reqRecipe"></select></div><div><label for="reqAmount">Target output (L)</label><input id="reqAmount" type="number" step="0.01" placeholder="1.00"></div></div><div class="actions"><button onclick="showRequirements()">Show requirements ↗</button></div><div id="reqOutput" class="result small" aria-live="polite">Choose a formula and enter your target volume.</div></section></div>
-<section class="box full"><div class="panel-head"><h2><span class="number">04</span>Chemical registry <span class="small" id="chemicalCount"></span></h2><input class="search" id="chemicalSearch" aria-label="Search chemical registry" placeholder="Search chemicals…" oninput="filterChemicals()"></div><p class="small">Purchase prices and calculated recipe costs per liter.</p><div class="table-scroll"><table id="chemTable"></table></div><div class="actions"><button onclick="addChemical()">+ Add chemical</button></div></section>
-</main><footer class="footer"><span>SCP-RP / CHEMISTRY DIVISION · LOCAL TERMINAL</span><button class="danger" onclick="resetAll()">Reset to factory defaults</button></footer></div>
+<section class="box full"><div class="panel-head"><h2><span class="number">04</span>Chemical registry <span class="small" id="chemicalCount"></span></h2><input class="search" id="chemicalSearch" aria-label="Search chemical registry" placeholder="Search chemicals…" oninput="filterChemicals()"></div><p class="small">Read-only purchase prices and calculated recipe costs per liter.</p><div class="table-scroll"><table id="chemTable"></table></div><div class="actions"></div></section>
+</main><footer class="footer"><span>SCP-RP / CHEMISTRY DIVISION · LOCAL TERMINAL</span></footer></div>
 <dialog id="chemicalPicker" class="chemical-dialog" aria-labelledby="pickerTitle"><div class="picker-header"><div class="panel-head"><div><div class="eyebrow">CHEMICAL REGISTRY</div><h2 id="pickerTitle">Select a chemical</h2></div><button class="picker-close" aria-label="Close chemical picker" onclick="chemicalPicker.close()">×</button></div><label for="pickerSearch">Search by chemical name</label><input id="pickerSearch" type="search" placeholder="Start typing a name…" oninput="renderChemicalPicker()"><div class="picker-meta"><span class="small" id="pickerCount" aria-live="polite"></span><span class="small">A → Z</span></div></div><div id="pickerResults" class="picker-results"></div><div class="picker-footer">Choose a chemical to add it to your formula. Esc to close.</div></dialog>
 <script>
 function unlockTerminal(event){
@@ -62,7 +62,7 @@ function unlockTerminal(event){
 }
 
 /* ===== CHEMICALS ===== */
-let chemicals = JSON.parse(localStorage.getItem("chemDB")) || {
+let chemicals = {
   "2-Napthol":250,"Acetic Anhydride":350,"Acetone":500,"AMN-A103":1500,
   "Amino Acid":300,"Amnesium":3000,"Anhydride":250,
   "Anomalous Bone Marrow":3500,"Anomalous Matter":1000,"Betonine":1000,
@@ -649,94 +649,24 @@ let defaultRecipes = {
   }
 };
 
-let recipes = JSON.parse(localStorage.getItem("recipes")) || structuredClone(defaultRecipes);
-if(localStorage.getItem("notesVersion") !== "1"){
-  localStorage.setItem("recipesBeforeChemicalNotes",JSON.stringify(recipes));
-  for(const [name,r] of Object.entries(defaultRecipes)){
-    const existing=recipes[name], prior=previousDefaults[name];
-    if(!existing || (prior && ['a','b','la','lb','y'].every(k=>existing[k]===prior[k]))) recipes[name]=structuredClone(r);
-  }
-  localStorage.setItem("recipes",JSON.stringify(recipes));
-  localStorage.setItem("notesVersion","1");
-}
-
-
-// Fill previously missing defaults without replacing user-entered yields.
-const recoveredYields = {"Erythromycin": 0.48, "Ketoprofen": 0.5, "Oseltamivir Phosphate": 0.48, "Doctors Cure": 0.99, "Quetiapine": 0.72, "AMN-A103": 0.49700000000000005, "AMN-C227": 0.496, "AMN-E269": 0.249, "AMN-F762-R": 0.2425, "N-HU-23X": 0.24, "Marcoline": 0.4, "Liquid Anima": 0.48, "Corticosteroid": 0.72, "Doctors Pestilence": 0.96, "Stable Quantum Matter": 0.5820000000000001, "Unstable Liquid Reality": 0.248, "Rubidolbenotine": 0.48, "Epilorine": 0.498, "Deuterium": 0.48, "Betonine": 0.48, "Ventanyl": 0.48, "Setraline": 0.485, "Duloxetine": 0.49, "Aspirin": 0.48, "AM-X22": 0.09699999999999999, "Salicyclic Acid": 0.495, "Dionized Water": 0.495, "Acetone": 0.48};
-if(localStorage.getItem("recoveredYieldsVersion")!=="1"){
-  localStorage.setItem("recipesBeforeRecoveredYields",JSON.stringify(recipes));
-  for(const [name,y] of Object.entries(recoveredYields)){
-    if(recipes[name] && recipes[name].y==null){
-      recipes[name].y=y;recipes[name].review="";
-      recipes[name].source="Chemical Notes; yield from published sheet";
-    }
-  }
-  localStorage.setItem("recipes",JSON.stringify(recipes));
-  localStorage.setItem("recoveredYieldsVersion","1");
-}
-
-
-/* Normalize duplicate names before calculating or displaying data. */
-function canonicalName(name){
-  const trimmed=String(name).trim();
-  const key=trimmed.toLowerCase();
-  if(key==="orange goop")return "Orange goop";
-  if(key==="diazapam"||key==="diazepam")return "Diazepam";
-  const known=[...Object.keys(defaultRecipes),...Object.keys(chemicals)];
-  return known.find(n=>n===trimmed)||known.find(n=>n.toLowerCase()===key)||trimmed;
-}
-function normalizeNames(){
-  const mergedChemicals={};
-  // Canonical spelling wins; otherwise retain an existing usable value.
-  for(const [name,value] of Object.entries(chemicals)){
-    const canonical=canonicalName(name);
-    if(!(canonical in mergedChemicals)||name===canonical||mergedChemicals[canonical]==null)
-      mergedChemicals[canonical]=value;
-  }
-  chemicals=mergedChemicals;
-  const mergedRecipes={};
-  for(const [name,recipe] of Object.entries(recipes)){
-    const canonical=canonicalName(name);
-    const normalized={...recipe,a:canonicalName(recipe.a),b:canonicalName(recipe.b)};
-    if(!(canonical in mergedRecipes)||name===canonical)mergedRecipes[canonical]=normalized;
-  }
-  recipes=mergedRecipes;
-  localStorage.setItem("recipes",JSON.stringify(recipes));
-  saveChemDB();
-}
-if(localStorage.getItem("nameCleanupVersion")!=="1"){
-  localStorage.setItem("beforeNameCleanup",JSON.stringify({chemicals,recipes}));
-  localStorage.setItem("nameCleanupVersion","1");
-}
-normalizeNames();
-
 const measuredYBlocker={"a":"Unstable Liquid Reality","b":"Brodamide","la":0.499,"lb":1,"y":0.8452301534356236,"method":"Fire","source":"In-game test: 1 L + 1 L → 1.267 L Y-Blocker; 0.501 L Reality returned","review":"Measured ratio 0.499:1 from one batch; additional tests can confirm consistency."};
-defaultRecipes["Y-Blocker"]=structuredClone(measuredYBlocker);
-if(localStorage.getItem("yBlockerTestVersion")!=="1"){
- localStorage.setItem("yBlockerBeforeTest",JSON.stringify(recipes["Y-Blocker"]??null));
- recipes["Y-Blocker"]=structuredClone(measuredYBlocker);
- localStorage.setItem("recipes",JSON.stringify(recipes));
- localStorage.setItem("yBlockerTestVersion","1");
-}
-
 const measuredAMND045={a:"Rubidolbenotine",b:"AMN-C227",la:1,lb:1,y:0.3965,method:"Fire",source:"In-game test: 1 L + 1 L → 793 mL; no leftovers",review:""};
-defaultRecipes["AMN-D045"]=structuredClone(measuredAMND045);
-if(localStorage.getItem("amnd045TestVersion")!=="1"){
- localStorage.setItem("amnd045BeforeTest",JSON.stringify(recipes["AMN-D045"]??null));
- recipes["AMN-D045"]=structuredClone(measuredAMND045);
- localStorage.setItem("recipes",JSON.stringify(recipes));
- localStorage.setItem("amnd045TestVersion","1");
-}
-
 const measuredDianabol={a:"Methyltestonerone",b:"Keto Acid",la:1,lb:1,y:0.7485,method:"Vacuum",source:"In-game test: 1 L + 1 L → 1497 mL; no leftovers",review:""};
-defaultRecipes.Dianabol=structuredClone(measuredDianabol);
-if(localStorage.getItem("dianabolTestVersion")!=="1"){
- localStorage.setItem("dianabolBeforeTest",JSON.stringify(recipes.Dianabol??null));
- recipes.Dianabol=structuredClone(measuredDianabol);
- localStorage.setItem("recipes",JSON.stringify(recipes));
- localStorage.setItem("dianabolTestVersion","1");
-}
 
+defaultRecipes["Y-Blocker"]=structuredClone(measuredYBlocker);
+defaultRecipes["AMN-D045"]=structuredClone(measuredAMND045);
+defaultRecipes.Dianabol=structuredClone(measuredDianabol);
+function canonicalName(name){
+ const n=String(name).trim(),key=n.toLowerCase();
+ if(key==="orange goop")return "Orange goop";
+ if(key==="diazapam"||key==="diazepam")return "Diazepam";
+ const known=[...Object.keys(defaultRecipes),...Object.keys(chemicals)];
+ return known.find(v=>v===n)||known.find(v=>v.toLowerCase()===key)||n;
+}
+let recipes=structuredClone(defaultRecipes);
+for(const r of Object.values(recipes)){r.a=canonicalName(r.a);r.b=canonicalName(r.b);Object.freeze(r);}
+Object.freeze(recipes);
+function normalizeNames(){}
 /* ===== INIT & BOOTSTRAP ===== */
 function bootstrapRecipesToChemicals(){
   for(const r of Object.values(recipes))for(const n of [r.a,r.b])if(!(n in chemicals))chemicals[n]=null;
@@ -787,12 +717,6 @@ function filterChemicals(){
     if(row.querySelector('td')) row.hidden=!row.cells[0].textContent.toLowerCase().includes(term);
   }
 }
-function addChemical(){
-  const name=prompt("Chemical name:"); if(!name||!name.trim())return;
-  const value=prompt("Purchase price per liter:"); if(value===null)return;
-  const price=Number(value); if(!Number.isFinite(price)||price<0||!value.trim()){alert("Enter a valid price.");return;}
-  chemicals[canonicalName(name)]=price;saveChemDB();init();
-}
 
 function escapeHTML(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function renderChemTable(){
@@ -800,14 +724,13 @@ function renderChemTable(){
   for(const c of Object.keys(chemicals).sort()){
     const key=escapeHTML(JSON.stringify(c)), label=escapeHTML(c), value=chemicals[c];
     h+=`<tr><td>${label}${recipes[c]?'<br><span class="small">Calculated recipe cost</span>':''}</td><td>`;
-    h+=recipes[c] ? (value==null?'<span class="small">Needs recipe data</span>':Number(value).toLocaleString(undefined,{maximumFractionDigits:2})) :
-      `<input aria-label="Price per liter for ${label}" type="number" value="${value??''}" onchange="chemicals[${key}]=this.value===''?null:Number(this.value);saveChemDB();init()">`;
-    h+=`</td><td><button aria-label="Delete ${label}" onclick="delete chemicals[${key}];saveChemDB();init()">X</button></td></tr>`;
+    h+=value==null?'<span class="small">Needs recipe data</span>':Number(value).toLocaleString(undefined,{maximumFractionDigits:2});
+    h+="</td><td><span class=\"small\">Read-only</span></td></tr>";
   }
   chemTable.innerHTML=h;filterChemicals();
 }
 function renderDatalist(){ chemList.innerHTML=Object.keys(chemicals).sort().map(c=>`<option value="${escapeHTML(c)}">`).join(""); }
-function saveChemDB(){ localStorage.setItem("chemDB",JSON.stringify(chemicals)); }
+function saveChemDB(){}
 
 function batchUsage(name,a,b,la,lb){
   let r=recipes[canonicalName(name)];
@@ -830,25 +753,13 @@ function calculate(){
   output.innerHTML=text+`<br>Consumed ingredient cost: $${cost.toFixed(2)}<br>Loaded ingredient value: $${inputCost.toFixed(2)}<br>Cost / L: $${(cost/out).toFixed(2)}`;
 }
 
-function saveRecipe(){
-  if(!rName.value.trim()){builderNotice.textContent="Enter an output chemical name before saving.";rName.focus();return;}
-  let y=(+rYield.value)/100;
-  if(!chemA.value||!chemB.value||+amtA.value<=0||+amtB.value<=0||y<=0||y>1){builderNotice.textContent="Enter both components, positive volumes, and a yield between 0 and 100%.";return;}
-  rName.value=canonicalName(rName.value);
-  const existing=recipes[rName.value],a=canonicalName(chemA.value),b=canonicalName(chemB.value);
-  let ra=+amtA.value,rb=+amtB.value;
-  if(existing&&existing.a===a&&existing.b===b){ra=existing.la;rb=existing.lb;}
-  else if(existing&&existing.a===b&&existing.b===a){ra=existing.lb;rb=existing.la;}
-  recipes[rName.value]={a,b,la:ra,lb:rb,y,method:rMethod.value,source:"Custom"};
-  chemicals[rName.value]=calcRecipePrice(rName.value);
-  saveChemDB(); localStorage.setItem("recipes",JSON.stringify(recipes)); init();
-}
+
 function loadRecipe(){ let r=recipes[savedRecipes.value]; if(!r)return;
   rName.value=savedRecipes.value; builderNotice.textContent=(r.source||"Custom")+": "+(r.review||"Formula loaded into builder.");
   output.innerHTML="";rMethod.value=r.method||"";
   chemA.value=r.a; chemB.value=r.b; amtA.value=r.la; amtB.value=r.lb; rYield.value=r.y==null?"":Number((r.y*100).toPrecision(14)); 
 }
-function deleteRecipe(){ delete recipes[savedRecipes.value]; localStorage.setItem("recipes",JSON.stringify(recipes)); init(); }
+
 function loadRecipeList(){ savedRecipes.innerHTML=Object.keys(recipes).sort().map(r=>`<option value="${escapeHTML(r)}">${escapeHTML(r)}${recipes[r].y==null?" · needs yield":""}</option>`).join(""); }
 
 function resolveRecipe(n,l,t,stack=[]){
@@ -879,15 +790,7 @@ function exportRecipes(){ let d=JSON.stringify(recipes,null,2);
   let a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([d],{type:"application/json"}));
   a.download="recipes.json"; a.click();
 }
-function importRecipes(e){
-  let r=new FileReader(); r.onload=()=>{ Object.assign(recipes,JSON.parse(r.result));
-  localStorage.setItem("recipes",JSON.stringify(recipes)); recalcAllRecipes(); init(); };
-  r.readAsText(e.target.files[0]);
-}
-function resetAll(){
-  if(!confirm("This will DELETE all recipes and reset chemicals to defaults.\nThis cannot be undone."))return;
-  localStorage.removeItem("recipes"); localStorage.removeItem("chemDB"); location.reload();
-}
+
 </script>
 </body>
 </html>
