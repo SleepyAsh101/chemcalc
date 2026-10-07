@@ -663,6 +663,7 @@ function canonicalName(name){
  const known=[...Object.keys(defaultRecipes),...Object.keys(chemicals)];
  return known.find(v=>v===n)||known.find(v=>v.toLowerCase()===key)||n;
 }
+Object.assign(defaultRecipes,{"NewULR":{"a":"Interdimensional Matter","b":"Stable Quantum Matter","la":1,"lb":1,"y":0.395,"method":"","source":"Recovered custom recipe","review":"Crafting method was not saved."},"NHU1":{"a":"NewULR","b":"Stable Quantum Matter","la":1,"lb":1,"y":0.24,"method":"","source":"Recovered custom recipe","review":"Crafting method was not saved."},"NEWNHU":{"a":"Interdimensional Matter","b":"Unstable Liquid Reality","la":1,"lb":1,"y":0.096,"method":"","source":"Recovered older recipe backup","review":"Older variant recovered from backup; crafting method was not saved."}});
 let recipes=structuredClone(defaultRecipes);
 for(const r of Object.values(recipes)){r.a=canonicalName(r.a);r.b=canonicalName(r.b);Object.freeze(r);}
 Object.freeze(recipes);
