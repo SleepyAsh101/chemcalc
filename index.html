@@ -663,11 +663,18 @@ function canonicalName(name){
  const known=[...Object.keys(defaultRecipes),...Object.keys(chemicals)];
  return known.find(v=>v===n)||known.find(v=>v.toLowerCase()===key)||n;
 }
-Object.assign(defaultRecipes,{"NewULR":{"a":"Interdimensional Matter","b":"Stable Quantum Matter","la":1,"lb":1,"y":0.395,"method":"","source":"Recovered custom recipe","review":"Crafting method was not saved."},"NHU1":{"a":"NewULR","b":"Stable Quantum Matter","la":1,"lb":1,"y":0.24,"method":"","source":"Recovered custom recipe","review":"Crafting method was not saved."},"NEWNHU":{"a":"Interdimensional Matter","b":"Unstable Liquid Reality","la":1,"lb":1,"y":0.096,"method":"","source":"Recovered older recipe backup","review":"Older variant recovered from backup; crafting method was not saved."}});
-defaultRecipes["New NHU"]=defaultRecipes.NHU1;
-delete defaultRecipes.NHU1;
-defaultRecipes["NHU (older backup)"]=defaultRecipes.NEWNHU;
-delete defaultRecipes.NEWNHU;
+// User-selected cheaper recipes replace the old formulas under canonical names.
+defaultRecipes["Unstable Liquid Reality"]={
+ a:"Interdimensional Matter",b:"Stable Quantum Matter",la:1,lb:1,y:0.395,
+ method:"",source:"Recovered custom recipe selected by owner",
+ review:"Crafting method was not saved."
+};
+defaultRecipes["N-HU-23X"]={
+ a:"Unstable Liquid Reality",b:"Stable Quantum Matter",la:1,lb:1,y:0.24,
+ method:"",source:"Recovered custom recipe selected by owner",
+ review:"Crafting method was not saved."
+};
+for(const name of ["NewULR","NHU1","NEWNHU","New NHU","NHU (older backup)"])delete defaultRecipes[name];
 let recipes=structuredClone(defaultRecipes);
 for(const r of Object.values(recipes)){r.a=canonicalName(r.a);r.b=canonicalName(r.b);Object.freeze(r);}
 Object.freeze(recipes);
