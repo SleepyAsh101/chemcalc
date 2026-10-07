@@ -676,6 +676,15 @@ if(localStorage.getItem("nameCleanupVersion")!=="1"){
 }
 normalizeNames();
 
+const measuredYBlocker={"a":"Unstable Liquid Reality","b":"Brodamide","la":0.499,"lb":1,"y":0.8452301534356236,"method":"Fire","source":"In-game test: 1 L + 1 L → 1.267 L Y-Blocker; 0.501 L Reality returned","review":"Measured ratio 0.499:1 from one batch; additional tests can confirm consistency."};
+defaultRecipes["Y-Blocker"]=structuredClone(measuredYBlocker);
+if(localStorage.getItem("yBlockerTestVersion")!=="1"){
+ localStorage.setItem("yBlockerBeforeTest",JSON.stringify(recipes["Y-Blocker"]??null));
+ recipes["Y-Blocker"]=structuredClone(measuredYBlocker);
+ localStorage.setItem("recipes",JSON.stringify(recipes));
+ localStorage.setItem("yBlockerTestVersion","1");
+}
+
 /* ===== INIT & BOOTSTRAP ===== */
 function bootstrapRecipesToChemicals(){
   for(const r of Object.values(recipes))for(const n of [r.a,r.b])if(!(n in chemicals))chemicals[n]=null;
@@ -748,14 +757,25 @@ function renderChemTable(){
 function renderDatalist(){ chemList.innerHTML=Object.keys(chemicals).sort().map(c=>`<option value="${escapeHTML(c)}">`).join(""); }
 function saveChemDB(){ localStorage.setItem("chemDB",JSON.stringify(chemicals)); }
 
+function batchUsage(name,a,b,la,lb){
+  let r=recipes[canonicalName(name)];
+  if(!r){const matches=Object.values(recipes).filter(p=>(p.a===a&&p.b===b)||(p.a===b&&p.b===a));if(matches.length===1)r=matches[0];}
+  let ra=la,rb=lb;
+  if(r&&r.a===a&&r.b===b){ra=r.la;rb=r.lb;}
+  else if(r&&r.a===b&&r.b===a){ra=r.lb;rb=r.la;}
+  const batches=Math.min(la/ra,lb/rb);
+  return {usedA:ra*batches,usedB:rb*batches,leftA:Math.max(0,la-ra*batches),leftB:Math.max(0,lb-rb*batches)};
+}
 function calculate(){
   builderNotice.textContent="";
-  let la=+amtA.value, lb=+amtB.value, y=(+rYield.value)/100;
-  if(!chemA.value||!chemB.value||la<=0||lb<=0||y<=0||y>1){builderNotice.textContent="Choose both chemicals, volumes, and a yield.";return;}
-  if(chemicals[chemA.value]==null||chemicals[chemB.value]==null){output.innerHTML=`Output: ${((la+lb)*y*1000).toFixed(1)} mL<br>Cost unavailable: a component needs price or recipe data.`;return;}
-  let cost=la*chemicals[chemA.value]+lb*chemicals[chemB.value];
-  let out=(la+lb)*y;
-  output.innerHTML=`Total Cost: $${cost.toFixed(2)}<br>Output: ${(out*1000).toFixed(1)} mL<br>Cost / L: $${(cost/out).toFixed(2)}`;
+  const la=+amtA.value,lb=+amtB.value,y=(+rYield.value)/100;
+  if(!chemA.value||!chemB.value||!Number.isFinite(la)||!Number.isFinite(lb)||!Number.isFinite(y)||la<=0||lb<=0||y<=0||y>1){builderNotice.textContent="Choose both chemicals, positive volumes, and a yield.";return;}
+  const a=canonicalName(chemA.value),b=canonicalName(chemB.value);
+  const u=batchUsage(rName.value,a,b,la,lb),out=(u.usedA+u.usedB)*y;
+  let text=`Output: ${(out*1000).toFixed(1)} mL<br>Consumed: ${(u.usedA*1000).toFixed(1)} mL ${escapeHTML(a)} + ${(u.usedB*1000).toFixed(1)} mL ${escapeHTML(b)}<br>Leftover: ${(u.leftA*1000).toFixed(1)} mL ${escapeHTML(a)} + ${(u.leftB*1000).toFixed(1)} mL ${escapeHTML(b)}`;
+  if(chemicals[a]==null||chemicals[b]==null){output.innerHTML=text+"<br>Cost unavailable: a component needs price or recipe data.";return;}
+  const cost=u.usedA*chemicals[a]+u.usedB*chemicals[b],inputCost=la*chemicals[a]+lb*chemicals[b];
+  output.innerHTML=text+`<br>Consumed ingredient cost: $${cost.toFixed(2)}<br>Loaded ingredient value: $${inputCost.toFixed(2)}<br>Cost / L: $${(cost/out).toFixed(2)}`;
 }
 
 function saveRecipe(){
@@ -763,14 +783,18 @@ function saveRecipe(){
   let y=(+rYield.value)/100;
   if(!chemA.value||!chemB.value||+amtA.value<=0||+amtB.value<=0||y<=0||y>1){builderNotice.textContent="Enter both components, positive volumes, and a yield between 0 and 100%.";return;}
   rName.value=canonicalName(rName.value);
-  recipes[rName.value]={a:canonicalName(chemA.value),b:canonicalName(chemB.value),la:+amtA.value,lb:+amtB.value,y,method:rMethod.value,source:"Custom"};
+  const existing=recipes[rName.value],a=canonicalName(chemA.value),b=canonicalName(chemB.value);
+  let ra=+amtA.value,rb=+amtB.value;
+  if(existing&&existing.a===a&&existing.b===b){ra=existing.la;rb=existing.lb;}
+  else if(existing&&existing.a===b&&existing.b===a){ra=existing.lb;rb=existing.la;}
+  recipes[rName.value]={a,b,la:ra,lb:rb,y,method:rMethod.value,source:"Custom"};
   chemicals[rName.value]=calcRecipePrice(rName.value);
   saveChemDB(); localStorage.setItem("recipes",JSON.stringify(recipes)); init();
 }
 function loadRecipe(){ let r=recipes[savedRecipes.value]; if(!r)return;
   rName.value=savedRecipes.value; builderNotice.textContent=(r.source||"Custom")+": "+(r.review||"Formula loaded into builder.");
   output.innerHTML="";rMethod.value=r.method||"";
-  chemA.value=r.a; chemB.value=r.b; amtA.value=r.la; amtB.value=r.lb; rYield.value=r.y==null?"":+(r.y*100).toFixed(6); 
+  chemA.value=r.a; chemB.value=r.b; amtA.value=r.la; amtB.value=r.lb; rYield.value=r.y==null?"":r.y*100; 
 }
 function deleteRecipe(){ delete recipes[savedRecipes.value]; localStorage.setItem("recipes",JSON.stringify(recipes)); init(); }
 function loadRecipeList(){ savedRecipes.innerHTML=Object.keys(recipes).sort().map(r=>`<option value="${escapeHTML(r)}">${escapeHTML(r)}${recipes[r].y==null?" · needs yield":""}</option>`).join(""); }
