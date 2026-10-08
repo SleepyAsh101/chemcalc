@@ -735,7 +735,7 @@ function renderReference(){
    if(filter==="crafted"&&!r)return false;
    if(filter==="base"&&r)return false;
    if(filter==="tested"&&!r?.source?.startsWith("In-game test"))return false;
-   if(filter==="sampled"&&!/samples?|blood|genome|scp-/i.test(info.acquisition||""))return false;
+   if(filter==="sampled"&&(r||!/samples?|blood|genome|scp-/i.test(info.acquisition||"")))return false;
    return [name,r?.a,r?.b,info.effects,info.acquisition,r?.method].join(" ").toLowerCase().includes(q);
  });
  referenceCount.textContent=matches.length+" ENTRIES";referenceList.replaceChildren();let letter="";
