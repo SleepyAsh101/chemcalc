@@ -74,7 +74,7 @@ function unlockTerminal(event){
 
 /* ===== CHEMICALS ===== */
 let chemicals = {
-  "2-Napthol":250,"Acetic Anhydride":350,"Acetone":500,"AMN-A103":1500,
+  "2-Napthol":250,"Acetic Anhydride":350,"Acetone":500,"AMN-A103":1000,
   "Amino Acid":300,"Amnesium":3000,"Anhydride":250,
   "Anomalous Bone Marrow":3500,"Anomalous Matter":1000,"Betonine":1000,
   "Brodamide":450,"Calcium":750,"Chlorine":750,"Citizol-Q":2000,
@@ -757,7 +757,7 @@ function renderReference(){
    const formula=r?r.a+" + "+r.b:info.acquisition||"Acquisition not recorded";
    const price=chemicals[name];const priceText=price==null?"Price not set":"$"+Number(price).toLocaleString(undefined,{maximumFractionDigits:2})+" / L";
    const yieldText=r?(r.y>0?Number((r.y*100).toPrecision(8))+"% yield":"Yield not recorded"):null;
-   card.innerHTML=`<summary><div class="reference-top"><span class="reference-name">${escapeHTML(name)}</span><span class="small">＋</span></div><div class="reference-formula">${escapeHTML(formula)}</div><div class="reference-tags"><span>${r?"CRAFTED":"BASE / OTHER"}</span>${r?"<span>"+escapeHTML(yieldText)+"</span><span>"+(r.source?.startsWith("In-game test")?"IN-GAME TESTED":"YIELD NOT VERIFIED")+"</span>":""}<span>${escapeHTML(priceText)}</span></div></summary><div class="reference-body">${r?"<h3>Recipe and method</h3><p>"+escapeHTML(r.la+" L "+r.a+" + "+r.lb+" L "+r.b+" · "+(r.method||"Method not recorded"))+"</p>":""}<h3>In-game effects</h3><p>${escapeHTML(info.effects||"Effects not recorded.")}</p>${info.notes?"<h3>Source notes</h3><p>"+escapeHTML(info.notes)+"</p>":""}${r?"<h3>Recipe source</h3><p>"+escapeHTML(r.source||"Calculator data")+"</p>":""}${r?.review?"<h3>Needs review</h3><p>"+escapeHTML(r.review)+"</p>":""}<h3>Price type</h3><p>${r?"Calculated crafting cost per liter":"Listed base price per liter; unset prices are not assumed"}</p></div>`;
+   card.innerHTML=`<summary><div class="reference-top"><span class="reference-name">${escapeHTML(name)}</span><span class="small">＋</span></div><div class="reference-formula">${escapeHTML(formula)}</div><div class="reference-tags"><span>${r?"CRAFTED":"BASE / OTHER"}</span>${r?"<span>"+escapeHTML(yieldText)+"</span><span>"+(r.source?.startsWith("In-game test")?"IN-GAME TESTED":"YIELD NOT VERIFIED")+"</span>":""}<span>${escapeHTML(priceText)}</span></div></summary><div class="reference-body">${r?"<h3>Recipe and method</h3><p>"+escapeHTML(r.la+" L "+r.a+" + "+r.lb+" L "+r.b+" · "+(r.method||"Method not recorded"))+"</p>":""}<h3>In-game effects</h3><p>${escapeHTML(info.effects||"Effects not recorded.")}</p>${info.notes?"<h3>Source notes</h3><p>"+escapeHTML(info.notes)+"</p>":""}${r?"<h3>Recipe source</h3><p>"+escapeHTML(r.source||"Calculator data")+"</p>":""}${r?.review?"<h3>Needs review</h3><p>"+escapeHTML(r.review)+"</p>":""}<h3>Price type</h3><p>${name==="AMN-A103"?"Fixed listed price: $1,000 per liter":r?"Calculated crafting cost per liter":"Listed base price per liter; unset prices are not assumed"}</p></div>`;
    if(r){const button=document.createElement("button");button.textContent="Calculate this recipe ↗";button.addEventListener("click",()=>openReferenceRecipe(name));card.querySelector(".reference-body").append(button);}
    referenceList.append(card);
  }
@@ -913,6 +913,7 @@ function showRequirements(){
   }catch(e){reqOutput.textContent=e.message;}
 }
 function calcRecipePrice(n,stack=[]){
+  if(n==="AMN-A103")return 1000;
   if(stack.includes(n))return null;
   const r=recipes[n];if(!r)return chemicals[n]??null;
   if(!(r.y>0 && r.y<=1 && r.la>0 && r.lb>0))return null;
