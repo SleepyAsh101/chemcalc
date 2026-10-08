@@ -714,6 +714,7 @@ defaultRecipes["Codeine"]={"a":"2-Napthol","b":"Steroids","la":1,"lb":1,"y":0.4,
 defaultRecipes["Potent Duloxetine"].method="Vacuum";
 defaultRecipes["Ibuprofen"].method="Vacuum";
 
+defaultRecipes["Deuterium"]={...defaultRecipes["Deuterium"],la:1,lb:1,y:0.4985,source:"In-game test: 1 L Radioactive Fluid + 1 L Water → 997 mL; no leftovers",review:""};
 let recipes=structuredClone(defaultRecipes);
 for(const r of Object.values(recipes)){r.a=canonicalName(r.a);r.b=canonicalName(r.b);}
 try{
