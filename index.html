@@ -46,9 +46,9 @@ body.terminal-locked{overflow:hidden}
 <div class="component"><div class="component-title">COMPONENT A</div><div class="fields"><div><label for="chemA">Chemical</label><div class="picker-trigger"><input id="chemA" readonly role="combobox" aria-haspopup="dialog" aria-expanded="false" aria-controls="chemicalPicker" placeholder="Choose a chemical…" onclick="openChemicalPicker('chemA')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openChemicalPicker('chemA')}"></div></div><div><label for="amtA">Volume (L)</label><input id="amtA" type="number" step="any" placeholder="1.00"></div></div></div>
 <div class="component"><div class="component-title">COMPONENT B</div><div class="fields"><div><label for="chemB">Chemical</label><div class="picker-trigger"><input id="chemB" readonly role="combobox" aria-haspopup="dialog" aria-expanded="false" aria-controls="chemicalPicker" placeholder="Choose a chemical…" onclick="openChemicalPicker('chemB')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openChemicalPicker('chemB')}"></div></div><div><label for="amtB">Volume (L)</label><input id="amtB" type="number" step="any" placeholder="1.00"></div></div></div>
 <div style="margin-top:14px"><label for="rMethod">Crafting method</label><select disabled id="rMethod"><option value="">Unspecified</option><option>Beaker</option><option>Vacuum</option><option>Fire</option><option>Centrifuge</option></select></div><datalist id="chemList"></datalist><div class="actions"><button class="primary" onclick="calculate()">Calculate batch ↗</button><button id="editRecipeButton" onclick="toggleRecipeEditing()">Edit recipe</button><button id="saveRecipeButton" hidden onclick="saveRecipeDraft()">Save recipe draft</button></div><div id="output" class="result" aria-live="polite"></div><div id="builderNotice" class="small notice" aria-live="polite"></div></section>
-<div><section class="box"><div class="panel-head"><h2><span class="number">02</span>Recipe archive</h2><span class="tag" id="recipeCount"></span></div><label for="savedRecipes">Saved formula</label><div class="toolbar"><select id="savedRecipes"></select><button onclick="loadRecipe()">Load</button></div><div class="divider"></div><div class="actions"><button onclick="exportRecipes()">↓ Export JSON</button></div><p class="small" style="margin-top:13px">Temporary recipe editing is enabled. Drafts save in this browser; export JSON and send it to @noway2887 to update the shared site. Prices are maintained in the source code.</p></section>
+<div><section class="box"><div class="panel-head"><h2><span class="number">02</span>Recipe archive</h2><span class="tag" id="recipeCount"></span></div><label for="savedRecipes">Saved formula</label><div class="toolbar"><select id="savedRecipes"></select><button onclick="loadRecipe()">Load</button></div><div class="divider"></div><div class="actions"><button onclick="exportRecipes()">↓ Export JSON</button></div><p class="small" style="margin-top:13px">Temporary recipe editing is enabled. Drafts save in this browser; export JSON and send it to @noway2887 to update the shared site. Base and sample prices can be tested in the chemical registry.</p></section>
 <section class="box"><div class="panel-head"><h2><span class="number">03</span>Batch requirements</h2></div><p class="small" style="margin-bottom:18px">Expand a formula into the base components you need.</p><div class="req-fields"><div><label for="reqRecipe">Output recipe</label><select id="reqRecipe"></select></div><div><label for="reqAmount">Target output (L)</label><input id="reqAmount" type="number" step="0.01" placeholder="1.00"></div></div><div class="actions"><button onclick="showRequirements()">Show requirements ↗</button></div><div id="reqOutput" class="result small" aria-live="polite">Choose a formula and enter your target volume.</div></section></div>
-<section class="box full" hidden><div class="panel-head"><h2><span class="number">04</span>Chemical registry <span class="small" id="chemicalCount"></span></h2><input class="search" id="chemicalSearch" aria-label="Search chemical registry" placeholder="Search chemicals…" oninput="filterChemicals()"></div><p class="small">Read-only purchase prices and calculated recipe costs per liter.</p><div class="table-scroll"><table id="chemTable"></table></div><div class="actions"></div></section>
+<div class="full"><button id="registryToggle" aria-expanded="false" aria-controls="chemicalRegistry" onclick="toggleRegistry()" style="margin-bottom:18px">Show chemical registry / edit prices</button></div><section id="chemicalRegistry" class="box full" hidden><div class="panel-head"><h2><span class="number">04</span>Chemical registry <span class="small" id="chemicalCount"></span></h2><input class="search" id="chemicalSearch" aria-label="Search chemical registry" placeholder="Search chemicals…" oninput="filterChemicals()"></div><p class="small">Temporary price testing: edit base and sample prices below. Changes save in this browser and update crafting costs.</p><div class="table-scroll"><table id="chemTable"></table></div><div class="actions"></div></section>
 </main>
 <section id="referenceView" hidden role="tabpanel" aria-labelledby="referenceTab" class="box">
 <div class="panel-head"><div><div class="eyebrow">SCP-RP · CHEMICAL FIELD GUIDE</div><h2 style="font-size:25px;margin-top:5px">Chemistry sheet</h2></div><span class="tag" id="referenceCount"></span></div>
@@ -90,6 +90,11 @@ let chemicals = {
   "Sodium Chloride":100,"Static Fluid":1000,"Sulfur":500,
   "Unstable Quantum Matter":3000,"Ventanyl":1000,"Water":100
 };
+
+try{
+ const prices=JSON.parse(localStorage.getItem("chemcalcPriceDrafts")||"{}");
+ for(const [name,value] of Object.entries(prices))if(typeof value==="number"&&Number.isFinite(value)&&value>=0)chemicals[name]=value;
+}catch(e){}
 
 /* ===== DEFAULT RECIPES ===== */
 const previousDefaults = {"AMN-B112": {"a": "AMN-A103", "b": "Amnesium", "la": 1, "lb": 1, "y": 0.499}, "Rubidol R-33": {"a": "2-Napthol", "b": "Methyltestonerone", "la": 1, "lb": 1, "y": 0.7485}, "Potent Duloxetine": {"a": "Duloxetine", "b": "Rubidol R-33", "la": 1, "lb": 1, "y": 0.399}, "AMN-C227": {"a": "AMN-B112", "b": "Potent Duloxetine", "la": 1, "lb": 1, "y": 0.496}, "Rubidolbenotine": {"a": "Betonine", "b": "Rubidol R-33", "la": 1, "lb": 1, "y": 0.48}, "AMN-D045": {"a": "Rubidolbenotine", "b": "AMN-C227", "la": 1, "lb": 1, "y": 0.398}, "Epilorine": {"a": "Ventanyl", "b": "Chlorine", "la": 1, "lb": 1, "y": 0.498}, "AMN-E269": {"a": "Epilorine", "b": "AMN-D045", "la": 1, "lb": 1, "y": 0.249}, "Liquid Anima": {"a": "SCP-323 Host Blood", "b": "Anomalous Bone Marrow", "la": 1, "lb": 1, "y": 0.48}, "AM-X22": {"a": "Liquid Anima", "b": "O- Blood", "la": 1, "lb": 1, "y": 0.097}, "AMN-F762-R": {"a": "AM-X22", "b": "AMN-E269", "la": 1, "lb": 1, "y": 0.2425}, "Unstable Liquid Reality": {"a": "Interdimensional Matter", "b": "Decaying Matter", "la": 1, "lb": 1, "y": 0.248}, "Stable Quantum Matter": {"a": "Unstable Quantum Matter", "b": "Anomalous Matter", "la": 1, "lb": 1, "y": 0.582}, "N-HU-23X": {"a": "Unstable Liquid Reality", "b": "Stable Quantum Matter", "la": 1, "lb": 1, "y": 0.24}, "Y-Blocker": {"a": "Unstable Liquid Reality", "b": "Brodamide", "la": 1, "lb": 1, "y": 0.62}, "Low Grade Ami-Blocker": {"a": "Y-Blocker", "b": "Amnesium", "la": 1, "lb": 1, "y": 0.24}, "High Grade Ami-Blocker": {"a": "Low Grade Ami-Blocker", "b": "SCP-096 Genome", "la": 1, "lb": 1, "y": 0.24}, "MN-06": {"a": "High Grade Ami-Blocker", "b": "SCP-008-2 Blood", "la": 1, "lb": 1, "y": 0.2425}, "Impure MN-X09-07": {"a": "MN-06", "b": "AMN-F762-R", "la": 1, "lb": 1, "y": 0.192}, "Pure MN-X09-07": {"a": "N-HU-23X", "b": "Impure MN-X09-07", "la": 1, "lb": 1, "y": 0.0495}};
@@ -817,13 +822,29 @@ function renderChemTable(){
   for(const c of Object.keys(chemicals).sort()){
     const key=escapeHTML(JSON.stringify(c)), label=escapeHTML(c), value=chemicals[c];
     h+=`<tr><td>${label}${recipes[c]?'<br><span class="small">Calculated recipe cost</span>':''}</td><td>`;
-    h+=value==null?'<span class="small">Needs recipe data</span>':Number(value).toLocaleString(undefined,{maximumFractionDigits:2});
-    h+="</td><td><span class=\"small\">Read-only</span></td></tr>";
+    if(recipes[c])h+=value==null?'<span class="small">Needs recipe data</span>':Number(value).toLocaleString(undefined,{maximumFractionDigits:2});
+    else h+='<input type="number" min="0" step="any" aria-label="Price per liter for '+label+'" value="'+(value??'')+'" placeholder="Set price" onchange="updateTestPrice('+key+',this.value)">';
+    h+="</td><td><span class=\"small\">"+(recipes[c]?"Calculated":"Browser test price")+"</span></td></tr>";
   }
   chemTable.innerHTML=h;filterChemicals();
 }
 function renderDatalist(){ chemList.innerHTML=Object.keys(chemicals).sort().map(c=>`<option value="${escapeHTML(c)}">`).join(""); }
 function saveChemDB(){}
+function toggleRegistry(){
+ chemicalRegistry.hidden=!chemicalRegistry.hidden;
+ registryToggle.setAttribute("aria-expanded",String(!chemicalRegistry.hidden));
+ registryToggle.textContent=chemicalRegistry.hidden?"Show chemical registry / edit prices":"Hide chemical registry";
+}
+function updateTestPrice(name,raw){
+ const value=Number(raw);
+ if(raw.trim()===""||!Number.isFinite(value)||value<0){renderChemTable();return;}
+ try{
+  const drafts=JSON.parse(localStorage.getItem("chemcalcPriceDrafts")||"{}");drafts[name]=value;
+  localStorage.setItem("chemcalcPriceDrafts",JSON.stringify(drafts));
+ }catch(e){builderNotice.textContent="Price could not be saved in this browser.";renderChemTable();return;}
+ chemicals[name]=value;bootstrapRecipesToChemicals();renderChemTable();renderReference();output.innerHTML="";
+ builderNotice.textContent="Test price saved in this browser. Crafting costs updated.";
+}
 
 function batchUsage(name,a,b,la,lb){
   let r=recipes[canonicalName(name)];
