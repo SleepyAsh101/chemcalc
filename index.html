@@ -675,6 +675,10 @@ defaultRecipes["N-HU-23X"]={
  review:"Crafting method was not saved."
 };
 for(const name of ["NewULR","NHU1","NEWNHU","New NHU","NHU (older backup)"])delete defaultRecipes[name];
+// In-game tests: all supplied ingredients consumed, no returns.
+defaultRecipes["AMN-F762-R"]={...defaultRecipes["AMN-F762-R"],la:1,lb:1,y:148/600,source:"In-game test: 300 mL + 300 mL → 148 mL; no leftovers",review:""};
+defaultRecipes["Impure MN-X09-07"]={...defaultRecipes["Impure MN-X09-07"],source:"In-game test: 100 mL + 100 mL → 38.4 mL; no leftovers",review:""};
+defaultRecipes["Pure MN-X09-07"]={...defaultRecipes["Pure MN-X09-07"],la:1,lb:1,y:0.046,source:"In-game test: 50 mL + 50 mL → 4.6 mL; no leftovers",review:""};
 let recipes=structuredClone(defaultRecipes);
 for(const r of Object.values(recipes)){r.a=canonicalName(r.a);r.b=canonicalName(r.b);Object.freeze(r);}
 Object.freeze(recipes);
