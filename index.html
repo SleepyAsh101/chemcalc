@@ -45,8 +45,8 @@ body.terminal-locked{overflow:hidden}
 <div class="fields"><div><label for="rName">Output chemical name</label><input readonly id="rName" placeholder="e.g. Stable Quantum Matter"></div><div><label for="rYield">Yield (%)</label><input readonly id="rYield" type="number" step="0.01" placeholder="24.8"></div></div>
 <div class="component"><div class="component-title">COMPONENT A</div><div class="fields"><div><label for="chemA">Chemical</label><div class="picker-trigger"><input id="chemA" readonly role="combobox" aria-haspopup="dialog" aria-expanded="false" aria-controls="chemicalPicker" placeholder="Choose a chemical…" onclick="openChemicalPicker('chemA')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openChemicalPicker('chemA')}"></div></div><div><label for="amtA">Volume (L)</label><input id="amtA" type="number" step="any" placeholder="1.00"></div></div></div>
 <div class="component"><div class="component-title">COMPONENT B</div><div class="fields"><div><label for="chemB">Chemical</label><div class="picker-trigger"><input id="chemB" readonly role="combobox" aria-haspopup="dialog" aria-expanded="false" aria-controls="chemicalPicker" placeholder="Choose a chemical…" onclick="openChemicalPicker('chemB')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openChemicalPicker('chemB')}"></div></div><div><label for="amtB">Volume (L)</label><input id="amtB" type="number" step="any" placeholder="1.00"></div></div></div>
-<div style="margin-top:14px"><label for="rMethod">Crafting method</label><select disabled id="rMethod"><option value="">Unspecified</option><option>Beaker</option><option>Vacuum</option><option>Fire</option><option>Centrifuge</option></select></div><datalist id="chemList"></datalist><div class="actions"><button class="primary" onclick="calculate()">Calculate batch ↗</button></div><div id="output" class="result" aria-live="polite"></div><div id="builderNotice" class="small notice" aria-live="polite"></div></section>
-<div><section class="box"><div class="panel-head"><h2><span class="number">02</span>Recipe archive</h2><span class="tag" id="recipeCount"></span></div><label for="savedRecipes">Saved formula</label><div class="toolbar"><select id="savedRecipes"></select><button onclick="loadRecipe()">Load</button></div><div class="divider"></div><div class="actions"><button onclick="exportRecipes()">↓ Export JSON</button></div><p class="small" style="margin-top:13px">Recipes and prices are read-only. Updates are maintained in the source code.</p></section>
+<div style="margin-top:14px"><label for="rMethod">Crafting method</label><select disabled id="rMethod"><option value="">Unspecified</option><option>Beaker</option><option>Vacuum</option><option>Fire</option><option>Centrifuge</option></select></div><datalist id="chemList"></datalist><div class="actions"><button class="primary" onclick="calculate()">Calculate batch ↗</button><button id="editRecipeButton" onclick="toggleRecipeEditing()">Edit recipe</button><button id="saveRecipeButton" hidden onclick="saveRecipeDraft()">Save recipe draft</button></div><div id="output" class="result" aria-live="polite"></div><div id="builderNotice" class="small notice" aria-live="polite"></div></section>
+<div><section class="box"><div class="panel-head"><h2><span class="number">02</span>Recipe archive</h2><span class="tag" id="recipeCount"></span></div><label for="savedRecipes">Saved formula</label><div class="toolbar"><select id="savedRecipes"></select><button onclick="loadRecipe()">Load</button></div><div class="divider"></div><div class="actions"><button onclick="exportRecipes()">↓ Export JSON</button></div><p class="small" style="margin-top:13px">Temporary recipe editing is enabled. Drafts save in this browser; export JSON and send it to @noway2887 to update the shared site. Prices are maintained in the source code.</p></section>
 <section class="box"><div class="panel-head"><h2><span class="number">03</span>Batch requirements</h2></div><p class="small" style="margin-bottom:18px">Expand a formula into the base components you need.</p><div class="req-fields"><div><label for="reqRecipe">Output recipe</label><select id="reqRecipe"></select></div><div><label for="reqAmount">Target output (L)</label><input id="reqAmount" type="number" step="0.01" placeholder="1.00"></div></div><div class="actions"><button onclick="showRequirements()">Show requirements ↗</button></div><div id="reqOutput" class="result small" aria-live="polite">Choose a formula and enter your target volume.</div></section></div>
 <section class="box full" hidden><div class="panel-head"><h2><span class="number">04</span>Chemical registry <span class="small" id="chemicalCount"></span></h2><input class="search" id="chemicalSearch" aria-label="Search chemical registry" placeholder="Search chemicals…" oninput="filterChemicals()"></div><p class="small">Read-only purchase prices and calculated recipe costs per liter.</p><div class="table-scroll"><table id="chemTable"></table></div><div class="actions"></div></section>
 </main>
@@ -691,8 +691,14 @@ defaultRecipes["AMN-F762-R"]={...defaultRecipes["AMN-F762-R"],la:1,lb:1,y:148/60
 defaultRecipes["Impure MN-X09-07"]={...defaultRecipes["Impure MN-X09-07"],source:"In-game test: 100 mL + 100 mL → 38.4 mL; no leftovers",review:""};
 defaultRecipes["Pure MN-X09-07"]={...defaultRecipes["Pure MN-X09-07"],la:1,lb:1,y:0.046,source:"In-game test: 50 mL + 50 mL → 4.6 mL; no leftovers",review:""};
 let recipes=structuredClone(defaultRecipes);
-for(const r of Object.values(recipes)){r.a=canonicalName(r.a);r.b=canonicalName(r.b);Object.freeze(r);}
-Object.freeze(recipes);
+for(const r of Object.values(recipes)){r.a=canonicalName(r.a);r.b=canonicalName(r.b);}
+try{
+ const drafts=JSON.parse(localStorage.getItem("chemcalcRecipeDrafts")||"{}");
+ for(const [name,r] of Object.entries(drafts)){
+  if(r&&r.a&&r.b&&r.la>0&&r.lb>0&&r.y>0&&r.y<=1)recipes[canonicalName(name)]={...r,a:canonicalName(r.a),b:canonicalName(r.b)};
+ }
+}catch(e){}
+
 function normalizeNames(){}
 /* ===== INIT & BOOTSTRAP ===== */
 function bootstrapRecipesToChemicals(){
@@ -753,6 +759,26 @@ function renderReference(){
  if(!matches.length){const empty=document.createElement("p");empty.className="reference-empty";empty.textContent="No chemicals match your search.";referenceList.append(empty);}
 }
 
+/* ===== TEMPORARY RECIPE EDITOR ===== */
+let recipeEditing=false;
+function toggleRecipeEditing(){
+ recipeEditing=!recipeEditing;
+ rName.readOnly=!recipeEditing;rYield.readOnly=!recipeEditing;rMethod.disabled=!recipeEditing;
+ saveRecipeButton.hidden=!recipeEditing;editRecipeButton.textContent=recipeEditing?"Finish editing":"Edit recipe";
+ builderNotice.textContent=recipeEditing?"Edit the recipe, then save your draft. Drafts stay in this browser until published.":"Recipe editing closed.";
+}
+function saveRecipeDraft(){
+ const name=canonicalName(rName.value.trim()),a=canonicalName(chemA.value),b=canonicalName(chemB.value),la=+amtA.value,lb=+amtB.value,y=+rYield.value/100;
+ if(!name||!a||!b||![la,lb,y].every(Number.isFinite)||la<=0||lb<=0||y<=0||y>1){builderNotice.textContent="Enter a name, two chemicals, positive volumes, and a yield between 0 and 100%.";return;}
+ const draft={a,b,la,lb,y,method:rMethod.value,source:"Editor draft",review:"Yield not independently verified"};
+ const candidate={...recipes,[name]:draft};
+ function cyclic(n,stack=[]){if(stack.includes(n))return true;const r=candidate[n];return r?cyclic(r.a,[...stack,n])||cyclic(r.b,[...stack,n]):false;}
+ if(cyclic(name)){builderNotice.textContent="Cannot save: this recipe creates a circular ingredient dependency.";return;}
+ try{const drafts=JSON.parse(localStorage.getItem("chemcalcRecipeDrafts")||"{}");drafts[name]=draft;localStorage.setItem("chemcalcRecipeDrafts",JSON.stringify(drafts));}
+ catch(e){builderNotice.textContent="Draft could not be saved in this browser.";return;}
+ recipes[name]=draft;init();savedRecipes.value=name;loadRecipe();renderReference();
+ builderNotice.textContent="Draft saved in this browser. Export JSON to publish these changes to the shared site.";
+}
 /* ===== UI / LOGIC ===== */
 let pickerTarget=null;
 function openChemicalPicker(target){
