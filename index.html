@@ -899,10 +899,16 @@ function showRequirements(){
       }
     }
     collect(name,target);
-    const lines=items=>Object.entries(items).sort(([a],[b])=>a.localeCompare(b)).map(([c,v])=>escapeHTML(c)+": "+Number((v*1000).toPrecision(6)).toLocaleString()+" mL").join("<br>");
+    const money=value=>"$"+value.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+    const lines=items=>Object.entries(items).sort(([a],[b])=>a.localeCompare(b)).map(([c,v])=>{
+      const price=chemicals[c],cost=price==null||!Number.isFinite(price)?"Cost unavailable":money(v*price);
+      return escapeHTML(c)+": "+Number((v*1000).toPrecision(6)).toLocaleString()+" mL — "+cost;
+    }).join("<br>");
+    const totalKnown=Object.entries(base).every(([c])=>chemicals[c]!=null&&Number.isFinite(chemicals[c]));
+    const total=totalKnown?money(Object.entries(base).reduce((sum,[c,v])=>sum+v*chemicals[c],0)):"Unavailable: missing ingredient prices";
     reqOutput.innerHTML="<b>Refined Ingredients Required:</b><br>"+(lines(refined)||"No refined ingredients needed.")+
       '<div class="small" style="margin-top:8px">Total intermediate quantities across the recipe chain.</div><div class="divider"></div>'+
-      "<b>Base Components Required:</b><br>"+lines(base)+
+      "<b>Base Components Required:</b><br>"+lines(base)+"<br><br><b>Total base ingredient cost: "+total+"</b>"+
       '<div class="small" style="margin-top:8px">Base totals already include everything needed to craft the refined ingredients above.</div>';
   }catch(e){reqOutput.textContent=e.message;}
 }
