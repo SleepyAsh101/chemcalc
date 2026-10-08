@@ -864,9 +864,25 @@ function resolveRecipe(n,l,t,stack=[]){
 }
 function showRequirements(){
   try{
-    if(!reqRecipe.value||!(+reqAmount.value>0))throw Error("Choose a recipe and a positive target volume.");
-    const t={};resolveRecipe(reqRecipe.value,+reqAmount.value,t);
-    reqOutput.innerHTML="<b>Base Components Required:</b><br>"+Object.entries(t).map(([c,v])=>`${escapeHTML(c)}: ${v.toFixed(3)} L`).join("<br>");
+    const target=+reqAmount.value,name=reqRecipe.value;
+    if(!name||!(target>0)||!Number.isFinite(target))throw Error("Choose a recipe and a positive target volume.");
+    const base={},refined={};resolveRecipe(name,target,base);
+    function collect(n,l,stack=[]){
+      if(stack.includes(n))throw Error("Circular recipe: "+n);
+      const r=recipes[n];if(!r)return;
+      if(!(r.y>0&&r.y<=1&&r.la>0&&r.lb>0))throw Error("Missing or invalid yield/volumes: "+n);
+      const batches=l/((r.la+r.lb)*r.y);
+      for(const [ingredient,volume] of [[r.a,r.la*batches],[r.b,r.lb*batches]]){
+        if(recipes[ingredient])refined[ingredient]=(refined[ingredient]||0)+volume;
+        collect(ingredient,volume,[...stack,n]);
+      }
+    }
+    collect(name,target);
+    const lines=items=>Object.entries(items).sort(([a],[b])=>a.localeCompare(b)).map(([c,v])=>escapeHTML(c)+": "+Number((v*1000).toPrecision(6)).toLocaleString()+" mL").join("<br>");
+    reqOutput.innerHTML="<b>Refined Ingredients Required:</b><br>"+(lines(refined)||"No refined ingredients needed.")+
+      '<div class="small" style="margin-top:8px">Total intermediate quantities across the recipe chain.</div><div class="divider"></div>'+
+      "<b>Base Components Required:</b><br>"+lines(base)+
+      '<div class="small" style="margin-top:8px">Base totals already include everything needed to craft the refined ingredients above.</div>';
   }catch(e){reqOutput.textContent=e.message;}
 }
 function calcRecipePrice(n,stack=[]){
