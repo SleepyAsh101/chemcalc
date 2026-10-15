@@ -818,31 +818,40 @@ function renderPureXMap(){
     curve=Math.max(38,(tx-sx)*0.45);
     path='M '+sx+' '+sy+' C '+(sx+curve)+' '+sy+', '+(tx-curve)+' '+ty+', '+tx+' '+ty;
    }
-   paths.push('<path d="'+path+'" fill="none" stroke="'+color+'" stroke-width="2.5" opacity=".78"/><circle cx="'+tx+'" cy="'+ty+'" r="4" fill="'+color+'"/>');
+   paths.push('<path d="'+path+'" fill="none" stroke="'+color+'" stroke-width="'+(exampleLayout?"3":"2.5")+'" opacity="'+(exampleLayout?"1":".78")+'" marker-end="url(#mapArrow-'+color.slice(1)+')"/>');
   }
  }
  const cards=[];
  for(const name of order){
   const p=points.get(name),item=nodes.get(name),recipe=item.recipe,info=referenceInfo(name);
-  const fill=name===root?"#20392c":recipe?"#13231d":"#10191f";
-  const stroke=name===root?"#9be4b4":recipe?"#365747":"#34444d";
-  const label=name.length>26?'<text x="'+(p.x+13)+'" y="'+(p.y+33)+'" fill="#e4edf0" font-size="13" font-weight="650" textLength="224" lengthAdjust="spacingAndGlyphs">'+mapSafeText(name)+'</text>':'<text x="'+(p.x+13)+'" y="'+(p.y+33)+'" fill="#e4edf0" font-size="14" font-weight="650">'+mapSafeText(name)+'</text>';
+  const fill=exampleLayout?(name===root?"#111111":recipe?"#ffffff":"#d8d8d8"):(name===root?"#20392c":recipe?"#13231d":"#10191f");
+  const stroke=exampleLayout?"#111111":(name===root?"#9be4b4":recipe?"#365747":"#34444d");
+  let label;
+  if(exampleLayout){
+   const words=name.split(/\\s+/),lines=[];let line="";
+   for(const word of words){if(line&&(line+" "+word).length>22){lines.push(line);line=word;}else line=line?line+" "+word:word;}
+   if(line)lines.push(line);
+   const labelColor=name===root?"#ffffff":"#111111",baseY=p.y+(lines.length>1?30:42);
+   label='<text x="'+(p.x+nodeW/2)+'" y="'+baseY+'" fill="'+labelColor+'" font-size="14" font-weight="700" text-anchor="middle">'+lines.slice(0,2).map((part,index)=>'<tspan x="'+(p.x+nodeW/2)+'" dy="'+(index?15:0)+'">'+mapSafeText(part)+'</tspan>').join("")+'</text>';
+  }else{
+   label=name.length>26?'<text x="'+(p.x+13)+'" y="'+(p.y+33)+'" fill="#e4edf0" font-size="13" font-weight="650" textLength="224" lengthAdjust="spacingAndGlyphs">'+mapSafeText(name)+'</text>':'<text x="'+(p.x+13)+'" y="'+(p.y+33)+'" fill="#e4edf0" font-size="14" font-weight="650">'+mapSafeText(name)+'</text>';
+  }
   let detail;
   let badge="";
   if(recipe){
    const method=name==="Pure MN-X09-07"?"Fire":recipe.method||"Method not listed";
    const volumes=Number(recipe.la||1).toLocaleString()+" L + "+Number(recipe.lb||1).toLocaleString()+" L";
-   detail='<text x="'+(p.x+13)+'" y="'+(p.y+62)+'" fill="#a8b8bf" font-size="11">'+mapSafeText(volumes+" · "+method)+'</text>';
+   detail='<text x="'+(p.x+13)+'" y="'+(p.y+(exampleLayout?68:62))+'" fill="'+(exampleLayout?"#333333":"#a8b8bf")+'" font-size="'+(exampleLayout?"10":"11")+'">'+mapSafeText(volumes+" · "+method)+'</text>';
    const yieldText=(Number(recipe.y)*100).toFixed(2).replace(/0+$/,"").replace(/\.$/,"")+"%";
-   badge='<rect x="'+(p.x+nodeW-70)+'" y="'+(p.y+8)+'" width="60" height="21" rx="5" fill="#8f211f"/><text x="'+(p.x+nodeW-40)+'" y="'+(p.y+23)+'" fill="#fff" font-size="10" font-weight="700" text-anchor="middle">'+yieldText+'</text>';
+   badge='<rect x="'+(p.x+nodeW-68)+'" y="'+(p.y+5)+'" width="58" height="21" rx="4" fill="'+(exampleLayout?"#b51d17":"#8f211f")+'" stroke="'+(exampleLayout?"#111111":"none")+'" stroke-width="1"/><text x="'+(p.x+nodeW-39)+'" y="'+(p.y+20)+'" fill="#fff" font-size="11" font-weight="800" text-anchor="middle">'+yieldText+'</text>';
   }else{
    const acquisition=info.acquisition||"Acquisition not recorded";
    const shortAcq=acquisition.length>34?acquisition.slice(0,31)+"…":acquisition;
-   detail='<text x="'+(p.x+13)+'" y="'+(p.y+62)+'" fill="#8c9fa9" font-size="10">'+mapSafeText(shortAcq)+'</text>';
+   detail='<text x="'+(p.x+13)+'" y="'+(p.y+(exampleLayout?68:62))+'" fill="'+(exampleLayout?"#333333":"#8c9fa9")+'" font-size="10">'+mapSafeText(shortAcq)+'</text>';
   }
   cards.push('<g><rect x="'+p.x+'" y="'+p.y+'" width="'+nodeW+'" height="'+nodeH+'" rx="9" fill="'+fill+'" stroke="'+stroke+'" stroke-width="'+(name===root?2:1.3)+'"/>'+label+detail+badge+'</g>');
  }
- pureXMapSize={width,height};pureXMapStage.classList.toggle("example-layout",pureXMapLayout==="example");pureXMapStage.setAttribute("aria-label",pureXMapLayout==="example"?"Example-style top-to-bottom recipe map":"Left-to-right recipe map");const svg='<svg class="pure-x-svg" xmlns="http://www.w3.org/2000/svg" width="'+Math.round(width*pureXMapZoom)+'" height="'+Math.round(height*pureXMapZoom)+'" viewBox="0 0 '+width+' '+height+'" role="img" aria-label="Recipe graph showing all ingredients and intermediate steps required to make Pure MN-X09-07"><rect width="100%" height="100%" fill="#091116"/>'+paths.join("")+cards.join("")+'</svg>';
+ pureXMapSize={width,height};pureXMapStage.classList.toggle("example-layout",exampleLayout);pureXMapStage.setAttribute("aria-label",exampleLayout?"Example-style top-to-bottom recipe map":"Left-to-right recipe map");const arrowDefs='<defs>'+["58a6ff","69cf91","ff625f","b891ff","71808a"].map(c=>'<marker id="mapArrow-'+c+'" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L8,4 L0,8 Z" fill="#'+c+'"/></marker>').join("")+'</defs>';const bg=exampleLayout?"#ffffff":"#091116";const svg='<svg class="pure-x-svg" xmlns="http://www.w3.org/2000/svg" width="'+Math.round(width*pureXMapZoom)+'" height="'+Math.round(height*pureXMapZoom)+'" viewBox="0 0 '+width+' '+height+'" role="img" aria-label="Recipe graph showing all ingredients and intermediate steps required to make Pure MN-X09-07">'+arrowDefs+'<rect width="100%" height="100%" fill="'+bg+'"/>'+paths.join("")+cards.join("")+'</svg>';
  pureXMapStage.innerHTML=svg;const stepCount=order.filter(name=>recipes[name]).length;pureXMapStepCount.textContent=(nodes.size-stepCount)+" base inputs · "+stepCount+" recipe steps";
 }
 function applyPureXMapZoom(){
