@@ -782,8 +782,8 @@ function renderPureXMap(){
  const layers=new Map();
  for(const name of order){const level=rank(name);if(!layers.has(level))layers.set(level,[]);layers.get(level).push(name);}
  const exampleLayout=pureXMapLayout==="example";
- const nodeW=exampleLayout?190:252,nodeH=exampleLayout?78:86,colGap=54,rowGap=94,padX=26,padY=26;
- const displayNodes=new Map(nodes),displayOrder=order.slice(),inputDisplayId=new Map(),displayLayers=exampleLayout?new Map():layers;
+ const nodeW=exampleLayout?164:252,nodeH=exampleLayout?76:86,colGap=54,rowGap=94,padX=26,padY=26;
+ const displayNodes=new Map(nodes),displayOrder=order.slice(),inputDisplayId=new Map(),sourceConsumer=new Map(),displayLayers=exampleLayout?new Map():layers;
  const addDisplayLayer=(level,id)=>{if(!displayLayers.has(level))displayLayers.set(level,[]);displayLayers.get(level).push(id);};
  if(exampleLayout){
   displayOrder.length=0;
@@ -794,23 +794,32 @@ function renderPureXMap(){
     if(nodes.get(inputName).recipe)return;
     const id="source:"+recipeName+":"+index;
     displayNodes.set(id,{name:inputName,recipe:null});displayOrder.push(id);
-    inputDisplayId.set(recipeName+"|"+index,id);addDisplayLayer(Math.max(0,rank(recipeName)-1),id);
+    inputDisplayId.set(recipeName+"|"+index,id);sourceConsumer.set(id,recipeName);addDisplayLayer(Math.max(0,rank(recipeName)-1),id);
    });
   }
  }
  const layoutMaxRank=Math.max(...displayLayers.keys());
+ const mainTrunk=[];let trunkNode=root;
+ while(nodes.get(trunkNode)?.recipe&&!mainTrunk.includes(trunkNode)){
+  mainTrunk.push(trunkNode);
+  const recipe=nodes.get(trunkNode).recipe;
+  const next=[canonicalName(recipe.a),canonicalName(recipe.b)].filter(name=>nodes.get(name)?.recipe).sort((a,b)=>rank(b)-rank(a));
+  if(!next.length)break;trunkNode=next[0];
+ }
  const maxRank=Math.max(...layers.keys()),maxRows=Math.max(...[...layers.values()].map(a=>a.length));
  let width,height;const points=new Map();
  if(pureXMapLayout==="example"){
-  const maxCols=6,slotX=nodeW+20,rowGapY=12,tierGap=12;
-  width=padX*2+maxCols*slotX-22;let bandY=padY;
+  const maxCols=7,slotX=nodeW+14,rowGapY=10,tierGap=10;
+  width=padX*2+maxCols*slotX-14;let bandY=padY;
   for(let level=0;level<=layoutMaxRank;level++){
-   const names=displayLayers.get(level)||[],rows=Math.max(1,Math.ceil(names.length/maxCols));
-   names.forEach((name,index)=>{
-    const row=Math.floor(index/maxCols),col=index%maxCols;
-    const rowCount=Math.min(maxCols,names.length-row*maxCols),offset=(maxCols-rowCount)/2;
-    points.set(name,{x:padX+(col+offset)*slotX,y:bandY+row*(nodeH+rowGapY)});
-   });
+   const names=displayLayers.get(level)||[],rows=Math.max(1,Math.ceil(names.length/maxCols)),placed=new Set();
+   const spine=mainTrunk.find(name=>rank(name)===level);
+   if(spine&&names.includes(spine)){points.set(spine,{x:padX+3*slotX,y:bandY});placed.add(spine);}
+   const spineConsumer=mainTrunk.find(name=>rank(name)===level+1);
+   const spineSources=names.filter(id=>sourceConsumer.get(id)===spineConsumer).slice(0,2);
+   spineSources.forEach((id,index)=>{const col=index===0?2:4;points.set(id,{x:padX+col*slotX,y:bandY});placed.add(id);});
+   const freeCols=[0,1,2,4,5,6];let cursor=0;
+   for(const id of names){if(placed.has(id))continue;const row=Math.floor(cursor/freeCols.length),col=freeCols[cursor%freeCols.length];points.set(id,{x:padX+col*slotX,y:bandY+row*(nodeH+rowGapY)});placed.add(id);cursor++;}
    bandY+=rows*(nodeH+rowGapY)+tierGap;
   }
   height=bandY+padY;
