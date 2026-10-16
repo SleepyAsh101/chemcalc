@@ -794,7 +794,7 @@ function renderPureXMap(){
     if(nodes.get(inputName).recipe)return;
     const id="source:"+recipeName+":"+index;
     displayNodes.set(id,{name:inputName,recipe:null});displayOrder.push(id);
-    inputDisplayId.set(recipeName+"|"+index,id);sourceConsumer.set(id,recipeName);addDisplayLayer(Math.max(0,rank(recipeName)-1),id);
+    inputDisplayId.set(recipeName+"|"+index,id);sourceConsumer.set(id,recipeName);addDisplayLayer(rank(recipeName),id);
    });
   }
  }
@@ -847,7 +847,12 @@ function renderPureXMap(){
    const from=points.get(fromId),to=points.get(name);if(!from||!to)continue;
    const color=mapMethodColor(name==="Pure MN-X09-07"?"Fire":out.recipe.method);
    let sx,sy,tx,ty,curve,path;
-   if(pureXMapLayout==="example"){
+   if(pureXMapLayout==="example"&&Math.abs(from.y-to.y)<1){
+    sy=from.y+nodeH/2;ty=to.y+nodeH/2;
+    if(from.x<to.x){sx=from.x+nodeW;tx=to.x;}else{sx=from.x;tx=to.x+nodeW;}
+    const direction=tx>=sx?1:-1;curve=Math.max(18,Math.abs(tx-sx)*0.4);
+    path='M '+sx+' '+sy+' C '+(sx+direction*curve)+' '+sy+', '+(tx-direction*curve)+' '+ty+', '+tx+' '+ty;
+   }else if(pureXMapLayout==="example"){
     sx=from.x+nodeW/2;sy=from.y+nodeH;tx=to.x+nodeW/2;ty=to.y;
     curve=Math.max(28,(ty-sy)*0.42);
     path='M '+sx+' '+sy+' C '+sx+' '+(sy+curve)+', '+tx+' '+(ty-curve)+', '+tx+' '+ty;
