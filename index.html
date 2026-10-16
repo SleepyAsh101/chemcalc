@@ -766,136 +766,63 @@ function renderPureXMap(){
  const root="Pure MN-X09-07",nodes=new Map(),order=[];
  function collect(name,stack=[]){
   name=canonicalName(name);if(nodes.has(name)||stack.includes(name))return;
-  const recipe=recipes[name]||null;
-  nodes.set(name,{name,recipe});order.push(name);
+  const recipe=recipes[name]||null;nodes.set(name,{name,recipe});order.push(name);
   if(recipe){collect(recipe.a,[...stack,name]);collect(recipe.b,[...stack,name]);}
  }
  collect(root);
  if(!nodes.has(root)||!nodes.get(root).recipe){pureXMapStage.innerHTML='<p class="small" style="padding:22px">The Pure MN-X09-07 recipe is missing from the saved recipe list.</p>';pureXMapStepCount.textContent="Recipe not found";return;}
  const rankCache=new Map();
- function rank(name,stack=[]){
-  if(rankCache.has(name))return rankCache.get(name);
-  if(stack.includes(name))return 0;
-  const recipe=recipes[name];const value=recipe?1+Math.max(rank(canonicalName(recipe.a),[...stack,name]),rank(canonicalName(recipe.b),[...stack,name])):0;
-  rankCache.set(name,value);return value;
- }
- const layers=new Map();
- for(const name of order){const level=rank(name);if(!layers.has(level))layers.set(level,[]);layers.get(level).push(name);}
- const exampleLayout=pureXMapLayout==="example";
- const nodeW=exampleLayout?164:252,nodeH=exampleLayout?76:86,colGap=54,rowGap=94,padX=26,padY=26;
+ function rank(name,stack=[]){if(rankCache.has(name))return rankCache.get(name);if(stack.includes(name))return 0;const r=recipes[name],v=r?1+Math.max(rank(canonicalName(r.a),[...stack,name]),rank(canonicalName(r.b),[...stack,name])):0;rankCache.set(name,v);return v;}
+ const layers=new Map();for(const n of order){const d=rank(n);if(!layers.has(d))layers.set(d,[]);layers.get(d).push(n);}
+ const exampleLayout=pureXMapLayout==="example",nodeW=exampleLayout?122:252,nodeH=exampleLayout?44:86,colGap=exampleLayout?16:54,rowGap=exampleLayout?58:94,padX=28,padY=34;
  const displayNodes=new Map(nodes),displayOrder=order.slice(),inputDisplayId=new Map(),sourceConsumer=new Map(),displayLayers=exampleLayout?new Map():layers;
- const addDisplayLayer=(level,id)=>{if(!displayLayers.has(level))displayLayers.set(level,[]);displayLayers.get(level).push(id);};
+ const addLayer=(level,id)=>{if(!displayLayers.has(level))displayLayers.set(level,[]);displayLayers.get(level).push(id);};
+ if(exampleLayout){displayOrder.length=0;for(const name of order){const recipe=nodes.get(name).recipe;if(!recipe)continue;displayOrder.push(name);addLayer(rank(name),name);[canonicalName(recipe.a),canonicalName(recipe.b)].forEach((input,index)=>{if(nodes.get(input).recipe)return;const id="source:"+name+":"+index;displayNodes.set(id,{name:input,recipe:null});displayOrder.push(id);inputDisplayId.set(name+"|"+index,id);sourceConsumer.set(id,name);addLayer(rank(name),id);});}}
+ const trunk=[];let trunkNode=root;while(nodes.get(trunkNode)?.recipe&&!trunk.includes(trunkNode)){trunk.push(trunkNode);const r=nodes.get(trunkNode).recipe,next=[canonicalName(r.a),canonicalName(r.b)].filter(n=>nodes.get(n)?.recipe).sort((a,b)=>rank(b)-rank(a));if(!next.length)break;trunkNode=next[0];}
+ const maxRank=Math.max(...layers.keys()),points=new Map();let width,height;
  if(exampleLayout){
-  displayOrder.length=0;
-  for(const recipeName of order){
-   const recipe=nodes.get(recipeName).recipe;if(!recipe)continue;
-   displayOrder.push(recipeName);addDisplayLayer(rank(recipeName),recipeName);
-   [canonicalName(recipe.a),canonicalName(recipe.b)].forEach((inputName,index)=>{
-    if(nodes.get(inputName).recipe)return;
-    const id="source:"+recipeName+":"+index;
-    displayNodes.set(id,{name:inputName,recipe:null});displayOrder.push(id);
-    inputDisplayId.set(recipeName+"|"+index,id);sourceConsumer.set(id,recipeName);addDisplayLayer(rank(recipeName),id);
-   });
-  }
- }
- const layoutMaxRank=Math.max(...displayLayers.keys());
- const mainTrunk=[];let trunkNode=root;
- while(nodes.get(trunkNode)?.recipe&&!mainTrunk.includes(trunkNode)){
-  mainTrunk.push(trunkNode);
-  const recipe=nodes.get(trunkNode).recipe;
-  const next=[canonicalName(recipe.a),canonicalName(recipe.b)].filter(name=>nodes.get(name)?.recipe).sort((a,b)=>rank(b)-rank(a));
-  if(!next.length)break;trunkNode=next[0];
- }
- const maxRank=Math.max(...layers.keys()),maxRows=Math.max(...[...layers.values()].map(a=>a.length));
- let width,height;const points=new Map();
- if(pureXMapLayout==="example"){
-  const maxCols=7,slotX=nodeW+14,rowGapY=10,tierGap=10,allCols=[0,1,2,3,4,5,6];
-  width=padX*2+maxCols*slotX-14;let bandY=padY;
-  for(let level=0;level<=layoutMaxRank;level++){
-   const names=displayLayers.get(level)||[],placed=new Set(),occupied=new Set();let rows=1;
-   const put=(id,col,row)=>{points.set(id,{x:padX+col*slotX,y:bandY+row*(nodeH+rowGapY)});placed.add(id);occupied.add(row+":"+col);rows=Math.max(rows,row+1);};
-   const spine=mainTrunk.find(name=>rank(name)===level);
-   if(spine&&names.includes(spine))put(spine,3,0);
-   const spineConsumer=mainTrunk.find(name=>rank(name)===level+1);
-   const spineSources=names.filter(id=>sourceConsumer.get(id)===spineConsumer).slice(0,2);
-   spineSources.forEach((id,index)=>put(id,index===0?2:4,0));
-   for(const id of names){
-    if(placed.has(id))continue;
-    let row=0,col=-1;
-    while(col<0){
-     const cols=row===0?allCols:allCols;
-     for(const candidate of cols){if(!occupied.has(row+":"+candidate)){col=candidate;break;}}
-     if(col<0)row++;
-    }
-    put(id,col,row);
-   }
-   bandY+=rows*(nodeH+rowGapY)+tierGap;
+  const cols=8,slotX=nodeW+colGap,tierGap=15;let bandY=padY;width=padX*2+cols*slotX-colGap+180;
+  for(let level=0;level<=Math.max(...displayLayers.keys());level++){
+   const names=displayLayers.get(level)||[],used=new Set(),occupied=new Set();let rows=1;
+   const put=(id,col,row)=>{points.set(id,{x:padX+col*slotX,y:bandY+row*rowGap});used.add(id);occupied.add(row+":"+col);rows=Math.max(rows,row+1);};
+   const spine=trunk.find(n=>rank(n)===level);if(spine&&names.includes(spine))put(spine,4,0);
+   const nextSpine=trunk.find(n=>rank(n)===level+1),spineSources=names.filter(id=>sourceConsumer.get(id)===nextSpine);
+   spineSources.slice(0,2).forEach((id,i)=>put(id,i===0?3:5,0));
+   const rest=names.filter(id=>!used.has(id)).sort((a,b)=>Number(!!displayNodes.get(a).recipe)-Number(!!displayNodes.get(b).recipe));
+   for(const id of rest){let row=0,col=-1;while(col<0){for(let c=0;c<cols;c++)if(!occupied.has(row+":"+c)){col=c;break;}if(col<0)row++;}put(id,col,row);}
+   bandY+=rows*rowGap+tierGap;
   }
   height=bandY+padY;
  }else{
-  width=padX*2+maxRank*(nodeW+colGap)+nodeW;
-  height=padY*2+Math.max(1,maxRows-1)*rowGap+nodeH;
+  const maxRows=Math.max(...[...layers.values()].map(a=>a.length));width=padX*2+maxRank*(nodeW+colGap)+nodeW;height=padY*2+Math.max(1,maxRows-1)*rowGap+nodeH;
   for(const [level,names] of layers)names.forEach((name,index)=>points.set(name,{x:padX+level*(nodeW+colGap),y:padY+index*rowGap}));
  }
  const paths=[];
- for(const name of order){
-  const out=nodes.get(name);if(!out.recipe)continue;
-  const inputNames=[canonicalName(out.recipe.a),canonicalName(out.recipe.b)];
-  for(let inputIndex=0;inputIndex<inputNames.length;inputIndex++){
-   const inputName=inputNames[inputIndex];
-   const fromId=exampleLayout&&!nodes.get(inputName).recipe?inputDisplayId.get(name+"|"+inputIndex):inputName;
-   const from=points.get(fromId),to=points.get(name);if(!from||!to)continue;
-   const color=mapMethodColor(name==="Pure MN-X09-07"?"Fire":out.recipe.method);
-   let sx,sy,tx,ty,curve,path;
-   if(pureXMapLayout==="example"&&Math.abs(from.y-to.y)<1){
-    sy=from.y+nodeH/2;ty=to.y+nodeH/2;
-    if(from.x<to.x){sx=from.x+nodeW;tx=to.x;}else{sx=from.x;tx=to.x+nodeW;}
-    const direction=tx>=sx?1:-1;curve=Math.max(18,Math.abs(tx-sx)*0.4);
-    path='M '+sx+' '+sy+' C '+(sx+direction*curve)+' '+sy+', '+(tx-direction*curve)+' '+ty+', '+tx+' '+ty;
-   }else if(pureXMapLayout==="example"){
-    sx=from.x+nodeW/2;sy=from.y+nodeH;tx=to.x+nodeW/2;ty=to.y;
-    curve=Math.max(28,(ty-sy)*0.42);
-    path='M '+sx+' '+sy+' C '+sx+' '+(sy+curve)+', '+tx+' '+(ty-curve)+', '+tx+' '+ty;
-   }else{
-    sx=from.x+nodeW;sy=from.y+nodeH/2;tx=to.x;ty=to.y+nodeH/2;
-    curve=Math.max(38,(tx-sx)*0.45);
-    path='M '+sx+' '+sy+' C '+(sx+curve)+' '+sy+', '+(tx-curve)+' '+ty+', '+tx+' '+ty;
-   }
-   paths.push('<path d="'+path+'" fill="none" stroke="'+color+'" stroke-width="'+(exampleLayout?"3":"2.5")+'" opacity="'+(exampleLayout?"1":".78")+'" marker-end="url(#mapArrow-'+color.slice(1)+')"/>');
-  }
+ for(const name of order){const out=nodes.get(name);if(!out.recipe)continue;const inputs=[canonicalName(out.recipe.a),canonicalName(out.recipe.b)];
+  inputs.forEach((input,index)=>{const fromId=exampleLayout&&!nodes.get(input).recipe?inputDisplayId.get(name+"|"+index):input,from=points.get(fromId),to=points.get(name);if(!from||!to)return;
+   const color=mapMethodColor(name===root?"Fire":out.recipe.method);let sx,sy,tx,ty,path;
+   if(exampleLayout){
+    const fc=from.x+nodeW/2,tc=to.x+nodeW/2,fy=from.y+nodeH/2,tyc=to.y+nodeH/2;
+    if(from.y===to.y){if(from.x<to.x){sx=from.x+nodeW;tx=to.x;}else{sx=from.x;tx=to.x+nodeW;}sy=ty=fy;const mid=(sx+tx)/2;path='M '+sx+' '+sy+' H '+mid+' V '+ty+' H '+tx;}
+    else{sx=fc;sy=from.y+nodeH;tx=tc;ty=to.y;const mid=sy+Math.max(9,(ty-sy)/2);path='M '+sx+' '+sy+' V '+mid+' H '+tx+' V '+ty;}
+   }else{sx=from.x+nodeW;sy=from.y+nodeH/2;tx=to.x;ty=to.y+nodeH/2;const mid=(sx+tx)/2;path='M '+sx+' '+sy+' H '+mid+' V '+ty+' H '+tx;}
+   paths.push('<path d="'+path+'" fill="none" stroke="'+color+'" stroke-width="'+(exampleLayout?2.5:2.5)+'" stroke-linejoin="round" marker-end="url(#mapArrow-'+color.slice(1)+')"/>');
+  });
  }
- const cards=[];
- for(const key of displayOrder){
-  const p=points.get(key),item=displayNodes.get(key),name=item.name,recipe=item.recipe,info=referenceInfo(name);
-  const fill=exampleLayout?(name===root?"#111111":recipe?"#ffffff":"#d8d8d8"):(name===root?"#20392c":recipe?"#13231d":"#10191f");
-  const stroke=exampleLayout?"#111111":(name===root?"#9be4b4":recipe?"#365747":"#34444d");
-  let label;
-  if(exampleLayout){
-   const words=name.split(" "),lines=[];let line="";
-   for(const word of words){if(line&&(line+" "+word).length>17){lines.push(line);line=word;}else line=line?line+" "+word:word;}
-   if(line)lines.push(line);
-   const labelColor=name===root?"#ffffff":"#111111",baseY=p.y+(lines.length>1?30:42);
-   label='<text x="'+(p.x+nodeW/2)+'" y="'+baseY+'" fill="'+labelColor+'" font-size="14" font-weight="700" text-anchor="middle">'+lines.slice(0,2).map((part,index)=>'<tspan x="'+(p.x+nodeW/2)+'" dy="'+(index?15:0)+'">'+mapSafeText(part)+'</tspan>').join("")+'</text>';
-  }else{
-   label=name.length>26?'<text x="'+(p.x+13)+'" y="'+(p.y+33)+'" fill="#e4edf0" font-size="13" font-weight="650" textLength="224" lengthAdjust="spacingAndGlyphs">'+mapSafeText(name)+'</text>':'<text x="'+(p.x+13)+'" y="'+(p.y+33)+'" fill="#e4edf0" font-size="14" font-weight="650">'+mapSafeText(name)+'</text>';
-  }
-  let detail;
-  let badge="";
-  if(recipe){
-   const method=name==="Pure MN-X09-07"?"Fire":recipe.method||"Method not listed";
-   const volumes=Number(recipe.la||1).toLocaleString()+" L + "+Number(recipe.lb||1).toLocaleString()+" L";
-   detail='<text x="'+(p.x+13)+'" y="'+(p.y+(exampleLayout?68:62))+'" fill="'+(exampleLayout?"#333333":"#a8b8bf")+'" font-size="'+(exampleLayout?"10":"11")+'">'+mapSafeText(volumes+" · "+method)+'</text>';
-   const yieldText=(Number(recipe.y)*100).toFixed(2).replace(/0+$/,"").replace(/\.$/,"")+"%";
-   badge='<rect x="'+(p.x+nodeW-68)+'" y="'+(p.y+5)+'" width="58" height="21" rx="4" fill="'+(exampleLayout?"#b51d17":"#8f211f")+'" stroke="'+(exampleLayout?"#111111":"none")+'" stroke-width="1"/><text x="'+(p.x+nodeW-39)+'" y="'+(p.y+20)+'" fill="#fff" font-size="11" font-weight="800" text-anchor="middle">'+yieldText+'</text>';
-  }else{
-   const acquisition=info.acquisition||"Acquisition not recorded";
-   const shortAcq=acquisition.length>(exampleLayout?22:34)?acquisition.slice(0,exampleLayout?19:31)+"…":acquisition;
-   detail='<text x="'+(p.x+13)+'" y="'+(p.y+(exampleLayout?68:62))+'" fill="'+(exampleLayout?"#333333":"#8c9fa9")+'" font-size="10">'+mapSafeText(shortAcq)+'</text>';
-  }
-  cards.push('<g><rect x="'+p.x+'" y="'+p.y+'" width="'+nodeW+'" height="'+nodeH+'" rx="9" fill="'+fill+'" stroke="'+stroke+'" stroke-width="'+(name===root?2:1.3)+'"/>'+label+detail+badge+'</g>');
+ const cards=[],badges=[];
+ for(const key of displayOrder){const p=points.get(key),item=displayNodes.get(key),name=item.name,recipe=item.recipe;if(!p)continue;const info=referenceInfo(name),isRoot=name===root;
+  const fill=exampleLayout?(isRoot?"#080808":recipe?"#ffffff":(info.acquisition||"").toLowerCase().includes("scavenged")?"#d6d6d6":"#ffffff"):(isRoot?"#20392c":recipe?"#13231d":"#10191f"),stroke=exampleLayout?"#111111":(isRoot?"#9be4b4":recipe?"#365747":"#34444d");
+  const words=name.split(/\s+/),lines=[];let line="";for(const word of words){if(line&&(line+" "+word).length>17){lines.push(line);line=word;}else line=line?line+" "+word:word;}if(line)lines.push(line);
+  const shown=exampleLayout?lines.slice(0,2):[name],font=exampleLayout?10.5:14,baseY=p.y+(exampleLayout?(shown.length>1?17:26):34),labelColor=isRoot&&exampleLayout?"#ffffff":exampleLayout?"#111111":"#e4edf0";
+  const label='<text x="'+(p.x+nodeW/2)+'" y="'+baseY+'" fill="'+labelColor+'" font-size="'+font+'" font-weight="700" text-anchor="middle">'+shown.map((part,i)=>'<tspan x="'+(p.x+nodeW/2)+'" dy="'+(i?12:0)+'">'+mapSafeText(part)+'</tspan>').join("")+'</text>';
+  cards.push('<g><rect x="'+p.x+'" y="'+p.y+'" width="'+nodeW+'" height="'+nodeH+'" rx="'+(exampleLayout?2:9)+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="'+(isRoot?2:1.3)+'"/>'+label+'</g>');
+  if(recipe){const yieldText=(Number(recipe.y)*100).toFixed(2).replace(/0+$/,"").replace(/\.$/,"")+"%",bw=42,bh=18,bx=p.x+nodeW-bw+2,by=p.y-bh-3;badges.push('<g><rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="3" fill="#b51d17" stroke="#111" stroke-width="1"/><text x="'+(bx+bw/2)+'" y="'+(by+13)+'" fill="#fff" font-size="9.5" font-weight="800" text-anchor="middle">'+yieldText+'</text></g>');}
  }
- pureXMapSize={width,height};pureXMapStage.classList.toggle("example-layout",exampleLayout);pureXMapStage.setAttribute("aria-label",exampleLayout?"Example-style top-to-bottom recipe map":"Left-to-right recipe map");const arrowDefs='<defs>'+["58a6ff","69cf91","ff625f","b891ff","71808a"].map(c=>'<marker id="mapArrow-'+c+'" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L8,4 L0,8 Z" fill="#'+c+'"/></marker>').join("")+'</defs>';const bg=exampleLayout?"#ffffff":"#091116";const svg='<svg class="pure-x-svg" xmlns="http://www.w3.org/2000/svg" width="'+Math.round(width*pureXMapZoom)+'" height="'+Math.round(height*pureXMapZoom)+'" viewBox="0 0 '+width+' '+height+'" role="img" aria-label="Recipe graph showing all ingredients and intermediate steps required to make Pure MN-X09-07">'+arrowDefs+'<rect width="100%" height="100%" fill="'+bg+'"/>'+paths.join("")+cards.join("")+'</svg>';
- pureXMapStage.innerHTML=svg;const stepCount=order.filter(name=>recipes[name]).length;pureXMapStepCount.textContent=(nodes.size-stepCount)+" base inputs · "+stepCount+" recipe steps";
+ const defs='<defs>'+["58a6ff","69cf91","ff625f","b891ff","71808a"].map(c=>'<marker id="mapArrow-'+c+'" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L7,3.5 L0,7 Z" fill="#'+c+'"/></marker>').join("")+'</defs>';
+ const extras=exampleLayout?'<g font-family="system-ui,sans-serif"><rect x="'+(width-178)+'" y="20" width="164" height="84" fill="#fff" stroke="#111" stroke-width="1.3"/><text x="'+(width-166)+'" y="39" font-size="10" font-weight="700">Arrow colors show the method:</text>'+[['58a6ff','Beaker'],['69cf91','Vacuum'],['ff625f','Fire'],['b891ff','Centrifuge']].map((item,i)=>'<text x="'+(width-164)+'" y="'+(58+i*14)+'" fill="#'+item[0]+'" font-size="11" font-weight="700">'+item[1]+'</text>').join("")+'<rect x="'+(width-178)+'" y="114" width="164" height="50" fill="#fff" stroke="#111" stroke-width="1.3"/><text x="'+(width-166)+'" y="133" font-size="10" font-weight="700">Red tags show recipe yield.</text><text x="'+(width-166)+'" y="149" font-size="9">Gray boxes are scavenged inputs.</text></g>':'';
+ const svg='<svg class="pure-x-svg" xmlns="http://www.w3.org/2000/svg" width="'+Math.round(width*pureXMapZoom)+'" height="'+Math.round(height*pureXMapZoom)+'" viewBox="0 0 '+width+' '+height+'" role="img" aria-label="Complete recipe map for Pure MN-X09-07">'+defs+'<rect width="100%" height="100%" fill="'+(exampleLayout?"#fff":"#091116")+'"/>'+paths.join("")+cards.join("")+badges.join("")+extras+'</svg>';
+ pureXMapSize={width,height};pureXMapStage.classList.toggle("example-layout",exampleLayout);pureXMapStage.setAttribute("aria-label",exampleLayout?"Example-photo style full recipe map":"Left-to-right recipe map");pureXMapStage.innerHTML=svg;
+ const stepCount=order.filter(name=>recipes[name]).length;pureXMapStepCount.textContent=(nodes.size-stepCount)+" base inputs · "+stepCount+" recipe steps";
 }
 function applyPureXMapZoom(){
  const svg=pureXMapStage.querySelector("svg");if(!svg||!pureXMapSize)return;
