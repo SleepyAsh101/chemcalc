@@ -776,6 +776,7 @@ function renderReferenceStyleMap(){
  const displayNodes=new Map(nodes),displayOrder=order.slice(),inputDisplayId=new Map(),point=new Map();
  const sourceCoords={
   "Setraline|0":[641,36],"Setraline|1":[535,36],
+  "Rubidolbenotine|1":[348,224],
   "AMN-A103|1":[482,96],"AMN-B112|0":[634,155],
   "Rubidol R-33|0":[348,165],"Rubidol R-33|1":[249,165],
   "Potent Duloxetine|1":[741,263],
@@ -808,7 +809,7 @@ function renderReferenceStyleMap(){
   const item=nodes.get(name);if(!item.recipe)continue;
   const inputNames=[canonicalName(item.recipe.a),canonicalName(item.recipe.b)];
   inputNames.forEach((input,index)=>{
-   const forcedRaw=(name==="Marcoline"&&input==="Betonine")||!nodes.get(input)?.recipe;
+   const forcedRaw=(name==="Marcoline"&&input==="Betonine")||(name==="Rubidolbenotine"&&input==="Rubidol R-33")||!nodes.get(input)?.recipe;
    if(forcedRaw){const key=name+"|"+index,coords=sourceCoords[key];if(coords)addSource(name,index,input,coords);}
   });
  }
@@ -818,7 +819,7 @@ function renderReferenceStyleMap(){
  for(const [index,name,coords] of [[0,"Interdimensional Matter",[1084,500]],[1,"Decaying Matter",[1084,547]]]){const id="source:"+rightAlias+":"+index;displayNodes.set(id,{name,recipe:null});displayOrder.push(id);point.set(id,{cx:coords[0],cy:coords[1]});rightAliasInputs.push(id);}
  for(const [name,xy] of Object.entries(productCoords))if(displayNodes.has(name))point.set(name,{cx:xy[0],cy:xy[1]});
  const W=1143,H=728;
- const rawSourceLabels={"source:alias:Unstable Liquid Reality:right:0":"106 Samples","source:alias:Unstable Liquid Reality:right:1":"0-35 Samples","source:Marcoline:1":"Chemist","source:AM-X22:1":"","source:Potent Duloxetine:1":"Chemist","source:Liquid Anima:0":"8854 Samples","source:Liquid Anima:1":"323 Samples","source:AM-X22:0":"","source:High Grade Ami-Blocker:0":"008 Samples","source:High Grade Ami-Blocker:1":"0-96 Samples","source:Unstable Liquid Reality:0":"0-35 Samples","source:Unstable Liquid Reality:1":"106 Samples","source:Marcoline:0":"860 Samples"};
+ const rawSourceLabels={"source:alias:Unstable Liquid Reality:right:0":"106 Samples","source:alias:Unstable Liquid Reality:right:1":"0-35 Samples","source:Marcoline:1":"Chemist","source:Rubidolbenotine:1":"Scavenged","source:AM-X22:1":"","source:Potent Duloxetine:1":"Chemist","source:Liquid Anima:0":"8854 Samples","source:Liquid Anima:1":"323 Samples","source:AM-X22:0":"","source:High Grade Ami-Blocker:0":"008 Samples","source:High Grade Ami-Blocker:1":"0-96 Samples","source:Unstable Liquid Reality:0":"0-35 Samples","source:Unstable Liquid Reality:1":"106 Samples","source:Marcoline:0":"860 Samples"};
  function dims(item,id){
   const name=item.name,info=referenceInfo(name),raw=!item.recipe,acquired=info.acquisition||"Acquisition not listed",acq=raw?(rawSourceLabels[id]!==undefined?rawSourceLabels[id]:name==="Amnesium"&&String(acquired).includes("939")?"939 Samples":acquired):"";
   const shownName=({"Methyltestonerone":"Methyltestosterone","2-Napthol":"2-Naphthol","Brodamide":"Brodamine","SCP-323 Host Blood":"323 Host Blood","SCP-860-2 Blood":"SCP-860-02 Blood","SCP-008-2 Blood":"008 Blood"})[name]||name;
@@ -848,7 +849,7 @@ function renderReferenceStyleMap(){
  rightAliasInputs.forEach(id=>addPath(id,rightAlias,"Fire")); const cards=[],badges=[];
  for(const id of displayOrder){
   const item=displayNodes.get(id),p=point.get(id),d=dimsById.get(id);if(!p||!d)continue;
-  const info=referenceInfo(item.name),isRoot=item.name===root,scavenged=(info.acquisition||"").toLowerCase().includes("scavenged"),gray=d.raw&&(scavenged||item.name==="Amnesium"||item.name==="Brodamide");
+  const info=referenceInfo(item.name),isRoot=item.name===root,scavenged=(info.acquisition||"").toLowerCase().includes("scavenged"),gray=d.raw&&(scavenged||d.acq.toLowerCase().includes("scavenged")||item.name==="Amnesium"||item.name==="Brodamide"||item.name==="Rubidol R-33");
   const fill=isRoot?"#080808":gray?"#d7d7d7":"#ffffff",stroke=isRoot?"#bd7b00":"#111111",left=p.cx-d.w/2,top=p.cy-d.h/2;
   const startY=d.titleLines.length>1?p.cy-3:p.cy+3;
   const title='<text x="'+p.cx+'" y="'+startY+'" fill="'+(isRoot?"#fff":"#111")+'" font-size="9.3" font-weight="700" text-anchor="middle">'+d.titleLines.slice(0,2).map((line,i)=>'<tspan x="'+p.cx+'" dy="'+(i?10:0)+'">'+mapSafeText(line)+'</tspan>').join("")+'</text>';
@@ -861,7 +862,7 @@ function renderReferenceStyleMap(){
  const note='<g font-family="system-ui,sans-serif" font-weight="700" fill="#111"><rect x="876" y="36" width="255" height="83" fill="#fff" stroke="#111" stroke-width="1.3"/><text x="1003" y="50" font-size="9.2" text-anchor="middle"><tspan x="1003">Note:</tspan><tspan x="1003" dy="13">If boxes are gray, the path costs more</tspan><tspan x="1003" dy="12">than the item is worth or it could have</tspan><tspan x="1003" dy="12">been scavenged for free.</tspan><tspan x="1003" dy="12">The red boxes indicate the yields for each chem.</tspan></text><rect x="1017" y="145" width="115" height="62" fill="#fff" stroke="#111" stroke-width="1.2"/><text x="1022" y="158" font-size="10">Legend:</text>'+[['58a6ff','Blue = Beaker'],['69cf91','Green = Vacuum'],['ff625f','Red = Fire'],['b891ff','Purple = Centrifuge']].map((x,i)=>'<text x="1022" y="'+(170+i*9)+'" fill="#'+x[0]+'" font-size="9.5">'+mapSafeText(x[1])+'</text>').join("")+'</g>';
  const svg='<svg class="pure-x-svg" xmlns="http://www.w3.org/2000/svg" width="'+Math.round(W*pureXMapZoom)+'" height="'+Math.round(H*pureXMapZoom)+'" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Recipe map aligned to the supplied example, showing all steps and inputs for Pure MN-X09-07">'+defs+'<rect width="100%" height="100%" fill="#fff"/>'+paths.join("")+cards.join("")+badges.join("")+note+'</svg>';
  pureXMapSize={width:W,height:H};pureXMapStage.classList.add("example-layout");pureXMapStage.setAttribute("aria-label","Example-photo aligned recipe map");pureXMapStage.style.setProperty("--map-zoom",pureXMapZoom);pureXMapStage.innerHTML=svg;
- const steps=order.filter(name=>nodes.get(name).recipe).length;pureXMapStepCount.textContent=(nodes.size-steps)+" base inputs · "+steps+" recipe steps";
+ const steps=displayOrder.filter(id=>displayNodes.get(id).recipe).length;const inputs=displayOrder.length-steps;pureXMapStepCount.textContent=inputs+" visible inputs · "+steps+" visible steps";
 }
 function renderPureXMap(){
  if(pureXMapLayout==="example"){renderReferenceStyleMap();return;}
