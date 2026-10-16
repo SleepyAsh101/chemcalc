@@ -938,7 +938,7 @@ function renderPureXMap(){
 function applyPureXMapZoom(){
  const svg=pureXMapStage.querySelector("svg");if(!svg||!pureXMapSize)return;
  svg.setAttribute("width",String(Math.round(pureXMapSize.width*pureXMapZoom)));
- svg.setAttribute("height",String(Math.round(pureXMapSize.height*pureXMapZoom)));
+ svg.setAttribute("height",String(Math.round(pureXMapSize.height*pureXMapZoom)));pureXMapStage.style.setProperty("--map-zoom",pureXMapZoom);
 }
 function changePureXMapZoom(delta){pureXMapZoom=Math.min(1.2,Math.max(0.45,Math.round((pureXMapZoom+delta)*10)/10));applyPureXMapZoom();}
 function resetPureXMapZoom(){pureXMapZoom=pureXMapLayout==="example"?1:0.7;applyPureXMapZoom();}
