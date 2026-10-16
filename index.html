@@ -785,7 +785,7 @@ function renderReferenceStyleMap(){
   "MN-06|1":[628,502],
   "Unstable Liquid Reality|0":[72,520],"Unstable Liquid Reality|1":[72,567],
   "Stable Quantum Matter|0":[72,615],"Stable Quantum Matter|1":[72,662],
-  "Low Grade Ami-Blocker|1":[842,501],
+  "Low Grade Ami-Blocker|1":[850,501],
   "High Grade Ami-Blocker|1":[762,586],
   "Y-Blocker|1":[970,586]
  };
@@ -815,7 +815,7 @@ function renderReferenceStyleMap(){
  for(const [name,xy] of Object.entries(productCoords))if(displayNodes.has(name))point.set(name,{cx:xy[0],cy:xy[1]});
  const W=1143,H=728;
  function dims(item){
-  const name=item.name,info=referenceInfo(name),raw=!item.recipe,acq=raw?(info.acquisition||"Acquisition not listed"):"";
+  const name=item.name,info=referenceInfo(name),raw=!item.recipe,acquired=info.acquisition||"Acquisition not listed",acq=raw?(name==="Amnesium"&&String(acquired).includes("939")?"939 Samples":acquired):"";
   const shownName=({"Methyltestonerone":"Methyltestosterone","2-Napthol":"2-Naphthol","SCP-860-2 Blood":"SCP-860-02 Blood","SCP-008-2 Blood":"008 Blood"})[name]||name;
   const titleLines=[];let line="";for(const word of shownName.split(/\s+/)){if(line&&(line+" "+word).length>18){titleLines.push(line);line=word;}else line=line?line+" "+word:word;}if(line)titleLines.push(line);
   const widest=Math.max(...titleLines.map(x=>x.length),Math.min(18,acq.length));
