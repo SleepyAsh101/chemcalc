@@ -816,8 +816,9 @@ function renderReferenceStyleMap(){
  const W=1143,H=728;
  function dims(item){
   const name=item.name,info=referenceInfo(name),raw=!item.recipe,acq=raw?(info.acquisition||"Acquisition not listed"):"";
-  const w=Math.max(72,Math.min(138,Math.max(name.length*5.4+14,acq.length*4.9+14)));
   const titleLines=[];let line="";for(const word of name.split(/\s+/)){if(line&&(line+" "+word).length>18){titleLines.push(line);line=word;}else line=line?line+" "+word:word;}if(line)titleLines.push(line);
+  const widest=Math.max(...titleLines.map(x=>x.length),Math.min(18,acq.length));
+  const w=Math.max(72,Math.min(122,widest*5.1+14));
   return {w,h:raw?36:32,raw,acq,titleLines};
  }
  const dimsById=new Map(displayOrder.map(id=>[id,dims(displayNodes.get(id))]));
