@@ -781,16 +781,18 @@ function renderPureXMap(){
  const trunk=[];let trunkNode=root;while(nodes.get(trunkNode)?.recipe&&!trunk.includes(trunkNode)){trunk.push(trunkNode);const r=nodes.get(trunkNode).recipe,next=[canonicalName(r.a),canonicalName(r.b)].filter(n=>nodes.get(n)?.recipe).sort((a,b)=>rank(b)-rank(a));if(!next.length)break;trunkNode=next[0];}
  const maxRank=Math.max(...layers.keys()),points=new Map();let width,height;
  if(exampleLayout){
-  const cols=8,slotX=nodeW+colGap,tierGap=15;let bandY=padY;width=padX*2+cols*slotX-colGap+180;
-  for(let level=0;level<=Math.max(...displayLayers.keys());level++){
-   const names=displayLayers.get(level)||[],used=new Set(),occupied=new Set();let rows=1;
-   const put=(id,col,row)=>{points.set(id,{x:padX+col*slotX,y:bandY+row*rowGap});used.add(id);occupied.add(row+":"+col);rows=Math.max(rows,row+1);};
-   const spine=trunk.find(n=>rank(n)===level);if(spine&&names.includes(spine))put(spine,4,0);
-   const nextSpine=trunk.find(n=>rank(n)===level+1),spineSources=names.filter(id=>sourceConsumer.get(id)===nextSpine);
-   spineSources.slice(0,2).forEach((id,i)=>put(id,i===0?3:5,0));
-   const rest=names.filter(id=>!used.has(id)).sort((a,b)=>Number(!!displayNodes.get(a).recipe)-Number(!!displayNodes.get(b).recipe));
-   for(const id of rest){let row=0,col=-1;while(col<0){for(let c=0;c<cols;c++)if(!occupied.has(row+":"+c)){col=c;break;}if(col<0)row++;}put(id,col,row);}
-   bandY+=rows*rowGap+tierGap;
+  const cols=9,slotX=nodeW+colGap,tierGap=18,levels=Math.max(...displayLayers.keys());let bandY=padY;width=padX*2+cols*slotX-colGap+180;
+  for(let level=0;level<=levels;level++){
+   const names=displayLayers.get(level)||[],recipesHere=names.filter(id=>displayNodes.get(id)?.recipe).sort((a,b)=>Number(a===trunk.find(n=>rank(n)===level))?-1:Number(b===trunk.find(n=>rank(n)===level))?1:0);
+   const rowCount=Math.max(1,Math.ceil(recipesHere.length/3));
+   for(let row=0;row<rowCount;row++){
+    const group=recipesHere.slice(row*3,row*3+3),usedCols=group.length===1?[4]:group.length===2?(group.includes(trunk.find(n=>rank(n)===level))?[4,7]:[2,6]):[1,4,7];
+    group.forEach((recipeName,idx)=>{const col=usedCols[idx],y=bandY+row*rowGap;points.set(recipeName,{x:padX+col*slotX,y});
+     const recipe=displayNodes.get(recipeName).recipe;
+     [canonicalName(recipe.a),canonicalName(recipe.b)].forEach((input,index)=>{if(nodes.get(input).recipe)return;const id=inputDisplayId.get(recipeName+"|"+index);if(id)points.set(id,{x:padX+(col+(index===0?-1:1))*slotX,y});});
+    });
+   }
+   bandY+=rowCount*rowGap+tierGap;
   }
   height=bandY+padY;
  }else{
