@@ -830,14 +830,14 @@ function renderReferenceStyleMap(){
   if(input==="Unstable Liquid Reality"&&consumer==="Y-Blocker")return rightAlias;
   return inputDisplayId.get(consumer+"|"+index)||input;
  };
- const paths=[];
+ const paths=[],pathSegments=[];
  function addPath(fromId,toId,method){
   const from=point.get(fromId),to=point.get(toId),fd=dimsById.get(fromId),td=dimsById.get(toId);if(!from||!to||!fd||!td)return;
-  const dx=to.cx-from.cx,dy=to.cy-from.cy,color=mapMethodColor(method);let sx,sy,tx,ty,path;
-  if(Math.abs(dy)<13){sx=dx>=0?from.cx+fd.w/2:from.cx-fd.w/2;sy=from.cy;tx=dx>=0?to.cx-td.w/2:to.cx+td.w/2;ty=to.cy;const mx=(sx+tx)/2;path='M '+sx+' '+sy+' H '+mx+' V '+ty+' H '+tx;}
-  else if(dy>0){sx=from.cx;sy=from.cy+fd.h/2;tx=to.cx;ty=to.cy-td.h/2;const my=sy+Math.max(10,(ty-sy)*.52);path='M '+sx+' '+sy+' V '+my+' H '+tx+' V '+ty;}
-  else{sx=dx>=0?from.cx+fd.w/2:from.cx-fd.w/2;sy=from.cy;tx=dx>=0?to.cx-td.w/2:to.cx+td.w/2;ty=to.cy;const mx=(sx+tx)/2;path='M '+sx+' '+sy+' H '+mx+' V '+ty+' H '+tx;}
-  paths.push('<path d="'+path+'" fill="none" stroke="'+color+'" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#refArrow-'+color.slice(1)+')"/>');
+  const dx=to.cx-from.cx,dy=to.cy-from.cy,color=mapMethodColor(method);let sx,sy,tx,ty,path,segments=[];
+  if(Math.abs(dy)<13){sx=dx>=0?from.cx+fd.w/2:from.cx-fd.w/2;sy=from.cy;tx=dx>=0?to.cx-td.w/2:to.cx+td.w/2;ty=to.cy;const mx=(sx+tx)/2;path='M '+sx+' '+sy+' H '+mx+' V '+ty+' H '+tx;segments=[["h",sx,sy,mx,sy],["v",mx,sy,mx,ty],["h",mx,ty,tx,ty]];}
+  else if(dy>0){sx=from.cx;sy=from.cy+fd.h/2;tx=to.cx;ty=to.cy-td.h/2;const my=sy+Math.max(10,(ty-sy)*.52);path='M '+sx+' '+sy+' V '+my+' H '+tx+' V '+ty;segments=[["v",sx,sy,sx,my],["h",sx,my,tx,my],["v",tx,my,tx,ty]];}
+  else{sx=dx>=0?from.cx+fd.w/2:from.cx-fd.w/2;sy=from.cy;tx=dx>=0?to.cx-td.w/2:to.cx+td.w/2;ty=to.cy;const mx=(sx+tx)/2;path='M '+sx+' '+sy+' H '+mx+' V '+ty+' H '+tx;segments=[["h",sx,sy,mx,sy],["v",mx,sy,mx,ty],["h",mx,ty,tx,ty]];}
+  pathSegments.push(...segments);paths.push('<path d="'+path+'" fill="none" stroke="'+color+'" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#refArrow-'+color.slice(1)+')"/>');
  }
  for(const name of order){
   const out=nodes.get(name);if(!out.recipe)continue;
@@ -859,7 +859,7 @@ function renderReferenceStyleMap(){
    [left+d.w-bw,top+d.h+gap],[left,top+d.h+gap],
    [p.cx-bw/2,top-bh-gap],[p.cx-bw/2,top+d.h+gap]
   ];const occupied=displayOrder.filter(other=>other!==id).map(other=>{const q=point.get(other),qd=dimsById.get(other);return q&&qd?{x:q.cx-qd.w/2,y:q.cy-qd.h/2,w:qd.w,h:qd.h}:null;}).filter(Boolean);occupied.push({x:876,y:36,w:255,h:83},{x:1017,y:145,w:115,h:62},...badges.map(b=>b.rect));let best=null,bestScore=Infinity;
-  for(let rank=0;rank<candidates.length;rank++){const raw=candidates[rank],bx=Math.max(2,Math.min(W-bw-2,raw[0])),by=Math.max(2,Math.min(H-bh-2,raw[1]));let score=rank*.01;for(const o of occupied){const overlap=Math.max(0,Math.min(bx+bw,o.x+o.w)-Math.max(bx,o.x))*Math.max(0,Math.min(by+bh,o.y+o.h)-Math.max(by,o.y));score+=overlap*100;}if(score<bestScore){bestScore=score;best={x:bx,y:by};}}
+  for(let rank=0;rank<candidates.length;rank++){const raw=candidates[rank],bx=Math.max(2,Math.min(W-bw-2,raw[0])),by=Math.max(2,Math.min(H-bh-2,raw[1]));let score=rank*.01;for(const o of occupied){const overlap=Math.max(0,Math.min(bx+bw,o.x+o.w)-Math.max(bx,o.x))*Math.max(0,Math.min(by+bh,o.y+o.h)-Math.max(by,o.y));score+=overlap*100;}for(const seg of pathSegments){const [axis,x1,y1,x2,y2]=seg;if(axis==="h"){const ox=Math.max(0,Math.min(bx+bw,Math.max(x1,x2))-Math.max(bx,Math.min(x1,x2)));if(ox>0&&by<=y1+4&&by+bh>=y1-4)score+=ox*8;}else{const oy=Math.max(0,Math.min(by+bh,Math.max(y1,y2))-Math.max(by,Math.min(y1,y2)));if(oy>0&&bx<=x1+4&&bx+bw>=x1-4)score+=oy*8;}}if(score<bestScore){bestScore=score;best={x:bx,y:by};}}
   const bx=best.x,by=best.y;badges.push({rect:{x:bx,y:by,w:bw,h:bh},svg:'<g><rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="2.5" fill="#b51d17" stroke="#111" stroke-width=".8"/><text x="'+(bx+bw/2)+'" y="'+(by+11.5)+'" fill="#fff" font-size="8.6" font-weight="800" text-anchor="middle">'+pct+'</text></g>'});}
  }
  const defs='<defs>'+["58a6ff","69cf91","ff625f","b891ff","71808a"].map(c=>'<marker id="refArrow-'+c+'" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L7,3.5 L0,7 Z" fill="#'+c+'"/></marker>').join("")+'</defs>';
