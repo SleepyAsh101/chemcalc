@@ -809,17 +809,26 @@ function renderPureXMap(){
  const maxRank=Math.max(...layers.keys()),maxRows=Math.max(...[...layers.values()].map(a=>a.length));
  let width,height;const points=new Map();
  if(pureXMapLayout==="example"){
-  const maxCols=7,slotX=nodeW+14,rowGapY=10,tierGap=10;
+  const maxCols=7,slotX=nodeW+14,rowGapY=10,tierGap=10,allCols=[0,1,2,3,4,5,6];
   width=padX*2+maxCols*slotX-14;let bandY=padY;
   for(let level=0;level<=layoutMaxRank;level++){
-   const names=displayLayers.get(level)||[],rows=Math.max(1,Math.ceil(names.length/maxCols)),placed=new Set();
+   const names=displayLayers.get(level)||[],placed=new Set(),occupied=new Set();let rows=1;
+   const put=(id,col,row)=>{points.set(id,{x:padX+col*slotX,y:bandY+row*(nodeH+rowGapY)});placed.add(id);occupied.add(row+":"+col);rows=Math.max(rows,row+1);};
    const spine=mainTrunk.find(name=>rank(name)===level);
-   if(spine&&names.includes(spine)){points.set(spine,{x:padX+3*slotX,y:bandY});placed.add(spine);}
+   if(spine&&names.includes(spine))put(spine,3,0);
    const spineConsumer=mainTrunk.find(name=>rank(name)===level+1);
    const spineSources=names.filter(id=>sourceConsumer.get(id)===spineConsumer).slice(0,2);
-   spineSources.forEach((id,index)=>{const col=index===0?2:4;points.set(id,{x:padX+col*slotX,y:bandY});placed.add(id);});
-   const freeCols=[0,1,2,4,5,6];let cursor=0;
-   for(const id of names){if(placed.has(id))continue;const row=Math.floor(cursor/freeCols.length),col=freeCols[cursor%freeCols.length];points.set(id,{x:padX+col*slotX,y:bandY+row*(nodeH+rowGapY)});placed.add(id);cursor++;}
+   spineSources.forEach((id,index)=>put(id,index===0?2:4,0));
+   for(const id of names){
+    if(placed.has(id))continue;
+    let row=0,col=-1;
+    while(col<0){
+     const cols=row===0?allCols:allCols;
+     for(const candidate of cols){if(!occupied.has(row+":"+candidate)){col=candidate;break;}}
+     if(col<0)row++;
+    }
+    put(id,col,row);
+   }
    bandY+=rows*(nodeH+rowGapY)+tierGap;
   }
   height=bandY+padY;
