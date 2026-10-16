@@ -843,7 +843,7 @@ function renderReferenceStyleMap(){
     sx=dx>=0?from.cx+fd.w/2:from.cx-fd.w/2;sy=from.cy;tx=dx>=0?to.cx-td.w/2:to.cx+td.w/2;ty=to.cy;
     const mx=(sx+tx)/2;path='M '+sx+' '+sy+' H '+mx+' V '+ty+' H '+tx;
    }
-   paths.push('<path d="'+path+'" fill="none" stroke="'+color+'" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#refArrow-'+color.slice(1)+' )"/>'.replace(' )',' )'));
+   paths.push('<path d="'+path+'" fill="none" stroke="'+color+'" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#refArrow-'+color.slice(1)+')"/>');
   });
  }
  const cards=[],badges=[];
