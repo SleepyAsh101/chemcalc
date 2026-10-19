@@ -783,7 +783,7 @@ function renderReferenceStyleMap(){
   if(recipe&&Number(recipe.y)>0){
    const a=cheapestUnitCost(recipe.a,[...stack,name]),b=cheapestUnitCost(recipe.b,[...stack,name]);
    const la=Number(recipe.la??1),lb=Number(recipe.lb??1);
-   if(Number.isFinite(a)&&Number.isFinite(b))craft=(a*la+b*lb)/Number(recipe.y);
+   if(Number.isFinite(a)&&Number.isFinite(b))craft=(a*la+b*lb)/(Number(recipe.y)*(la+lb));
   }
   const best=Number.isFinite(buy)?Math.min(buy,craft):craft;
   costMemo.set(name,best);
