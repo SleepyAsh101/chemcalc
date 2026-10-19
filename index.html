@@ -1124,7 +1124,7 @@ function showRequirements(){
   try{
     const target=+reqAmount.value,name=canonicalName(reqRecipe.value);
     if(!name||!(target>0)||!Number.isFinite(target))throw Error("Choose a recipe and a positive target volume.");
-    const refinedMake={},refinedBuy={},baseBuy={};
+    const refinedMake={},refinedBuy={},baseBuy={};let outputSource="MAKE";
     const add=(bucket,key,volume)=>bucket[key]=(bucket[key]||0)+volume;
     const money=value=>"$"+value.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
     function craftUnitCost(n,stack=[]){
@@ -1144,10 +1144,11 @@ function showRequirements(){
       if(!(r.y>0&&r.y<=1&&r.la>0&&r.lb>0))throw Error("Missing or invalid yield/volumes: "+n);
       const buy=chemistPrices[n],craft=craftUnitCost(n,stack);
       if(buy!=null&&Number.isFinite(Number(buy))&&(craft==null||Number(buy)<craft)){
-        add(refinedBuy,n,volume);return;
+        if(stack.length===0)outputSource="BUY";else add(refinedBuy,n,volume);
+        return;
       }
       if(craft==null)throw Error("Cannot price a complete recipe chain for "+n+".");
-      add(refinedMake,n,volume);
+      if(stack.length>0)add(refinedMake,n,volume);
       const batches=volume/((r.la+r.lb)*r.y),next=[...stack,n];
       source(r.a,r.la*batches,next);source(r.b,r.lb*batches,next);
     }
@@ -1161,11 +1162,12 @@ function showRequirements(){
     const boughtRefined=Object.entries(refinedBuy).sort(([a],[b])=>a.localeCompare(b)).map(([c,v])=>boughtLine(c,v)).join("<br>");
     const madeRefined=Object.entries(refinedMake).sort(([a],[b])=>a.localeCompare(b)).map(([c,v])=>escapeHTML(c)+": "+Number((v*1000).toPrecision(6)).toLocaleString()+" mL — MAKE").join("<br>");
     const baseLines=lines(baseBuy,"BUY");
-    const entries=[...Object.entries(refinedBuy),...Object.entries(baseBuy)];
+    const entries=[...Object.entries(refinedBuy),...Object.entries(baseBuy),...(outputSource==="BUY"?[[name,target]]:[])];
     const known=entries.every(([c])=>chemistPrices[c]!=null&&Number.isFinite(Number(chemistPrices[c])));
     const total=known?money(entries.reduce((sum,[c,v])=>sum+v*Number(chemistPrices[c]),0)):"Unavailable: missing ingredient prices";
     const refined=[boughtRefined,madeRefined].filter(Boolean).join("<br>")||"No refined ingredients needed.";
-    reqOutput.innerHTML="<b>Refined Ingredients Required:</b><br>"+refined+
+    const outputText="Output: "+Number((target*1000).toPrecision(6)).toLocaleString()+" mL — "+outputSource+(outputSource==="BUY"?" · "+money(target*Number(chemistPrices[name])):"");
+    reqOutput.innerHTML="<b>"+outputText+"</b><br><br><b>Refined Ingredients Required:</b><br>"+refined+
       '<div class="small" style="margin-top:8px">BUY means the chemist price is lower than making it; MAKE expands into its ingredients below.</div><div class="divider"></div>'+
       "<b>Base Components Required:</b><br>"+(baseLines||"None; all required refined ingredients are bought.")+"<br><br><b>Estimated cost using the cheaper source at each step: "+total+"</b>";
   }catch(e){reqOutput.textContent=e.message;}
