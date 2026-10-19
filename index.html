@@ -92,7 +92,7 @@ try{
 
 // Keep actual chemist/sample prices before recipe bootstrapping replaces crafted
 // chemicals with their calculated unit costs.
-const chemistPrices={...chemicals};
+let chemistPrices={...chemicals};
 
 /* ===== DEFAULT RECIPES ===== */
 const previousDefaults = {"AMN-B112": {"a": "AMN-A103", "b": "Amnesium", "la": 1, "lb": 1, "y": 0.499}, "Rubidol R-33": {"a": "2-Napthol", "b": "Methyltestonerone", "la": 1, "lb": 1, "y": 0.7485}, "Potent Duloxetine": {"a": "Duloxetine", "b": "Rubidol R-33", "la": 1, "lb": 1, "y": 0.399}, "AMN-C227": {"a": "AMN-B112", "b": "Potent Duloxetine", "la": 1, "lb": 1, "y": 0.496}, "Rubidolbenotine": {"a": "Betonine", "b": "Rubidol R-33", "la": 1, "lb": 1, "y": 0.48}, "AMN-D045": {"a": "Rubidolbenotine", "b": "AMN-C227", "la": 1, "lb": 1, "y": 0.398}, "Epilorine": {"a": "Ventanyl", "b": "Chlorine", "la": 1, "lb": 1, "y": 0.498}, "AMN-E269": {"a": "Epilorine", "b": "AMN-D045", "la": 1, "lb": 1, "y": 0.249}, "Liquid Anima": {"a": "SCP-323 Host Blood", "b": "Anomalous Bone Marrow", "la": 1, "lb": 1, "y": 0.48}, "AM-X22": {"a": "Liquid Anima", "b": "O- Blood", "la": 1, "lb": 1, "y": 0.097}, "AMN-F762-R": {"a": "AM-X22", "b": "AMN-E269", "la": 1, "lb": 1, "y": 0.2425}, "Unstable Liquid Reality": {"a": "Interdimensional Matter", "b": "Decaying Matter", "la": 1, "lb": 1, "y": 0.248}, "Stable Quantum Matter": {"a": "Unstable Quantum Matter", "b": "Anomalous Matter", "la": 1, "lb": 1, "y": 0.582}, "N-HU-23X": {"a": "Unstable Liquid Reality", "b": "Stable Quantum Matter", "la": 1, "lb": 1, "y": 0.24}, "Y-Blocker": {"a": "Unstable Liquid Reality", "b": "Brodamide", "la": 1, "lb": 1, "y": 0.62}, "Low Grade Ami-Blocker": {"a": "Y-Blocker", "b": "Amnesium", "la": 1, "lb": 1, "y": 0.24}, "High Grade Ami-Blocker": {"a": "Low Grade Ami-Blocker", "b": "SCP-096 Genome", "la": 1, "lb": 1, "y": 0.24}, "MN-06": {"a": "High Grade Ami-Blocker", "b": "SCP-008-2 Blood", "la": 1, "lb": 1, "y": 0.2425}, "Impure MN-X09-07": {"a": "MN-06", "b": "AMN-F762-R", "la": 1, "lb": 1, "y": 0.192}, "Pure MN-X09-07": {"a": "N-HU-23X", "b": "Impure MN-X09-07", "la": 1, "lb": 1, "y": 0.0495}};
@@ -1079,7 +1079,7 @@ function updateTestPrice(name,raw){
   const drafts=JSON.parse(localStorage.getItem("chemcalcPriceDrafts")||"{}");drafts[name]=value;
   localStorage.setItem("chemcalcPriceDrafts",JSON.stringify(drafts));
  }catch(e){builderNotice.textContent="Price could not be saved in this browser.";renderChemTable();return;}
- chemicals[name]=value;bootstrapRecipesToChemicals();renderChemTable();renderReference();output.innerHTML="";
+ chemistPrices[name]=value;chemicals[name]=value;bootstrapRecipesToChemicals();renderChemTable();renderReference();output.innerHTML="";
  builderNotice.textContent="Test price saved in this browser. Crafting costs updated.";
 }
 
@@ -1150,13 +1150,17 @@ function showRequirements(){
   }catch(e){reqOutput.textContent=e.message;}
 }
 function calcRecipePrice(n,stack=[]){
-  if(n==="AMN-A103")return 1000;
-  if(stack.includes(n))return null;
-  const r=recipes[n];if(!r)return chemicals[n]??null;
-  if(!(r.y>0 && r.y<=1 && r.la>0 && r.lb>0))return null;
-  const ca=calcRecipePrice(r.a,[...stack,n]),cb=calcRecipePrice(r.b,[...stack,n]);
-  if(ca==null||cb==null||!Number.isFinite(ca)||!Number.isFinite(cb))return null;
-  return +((r.la*ca+r.lb*cb)/((r.la+r.lb)*r.y)).toFixed(2);
+  n=canonicalName(n);
+  const buy=chemistPrices[n],hasBuy=buy!=null&&Number.isFinite(Number(buy));
+  if(stack.includes(n))return hasBuy?Number(buy):null;
+  const r=recipes[n];let crafted=null;
+  if(r&&r.y>0&&r.y<=1&&r.la>0&&r.lb>0){
+    const ca=calcRecipePrice(r.a,[...stack,n]),cb=calcRecipePrice(r.b,[...stack,n]);
+    if(ca!=null&&cb!=null&&Number.isFinite(ca)&&Number.isFinite(cb))
+      crafted=+((r.la*ca+r.lb*cb)/((r.la+r.lb)*r.y)).toFixed(2);
+  }
+  if(!hasBuy)return crafted;
+  return crafted==null?+Number(buy).toFixed(2):Math.min(+Number(buy).toFixed(2),crafted);
 }
 function recalcAllRecipes(){bootstrapRecipesToChemicals();}
 
