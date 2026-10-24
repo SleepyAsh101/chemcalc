@@ -48,9 +48,9 @@
 <div class="component"><div class="component-title">COMPONENT A</div><div class="fields"><div><label for="chemA">Chemical</label><div class="picker-trigger"><input id="chemA" readonly role="combobox" aria-haspopup="dialog" aria-expanded="false" aria-controls="chemicalPicker" placeholder="Choose a chemical…" onclick="openChemicalPicker('chemA')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openChemicalPicker('chemA')}"></div></div><div><label for="amtA">Volume (L)</label><input id="amtA" type="number" step="any" placeholder="1.00"></div></div></div>
 <div class="component"><div class="component-title">COMPONENT B</div><div class="fields"><div><label for="chemB">Chemical</label><div class="picker-trigger"><input id="chemB" readonly role="combobox" aria-haspopup="dialog" aria-expanded="false" aria-controls="chemicalPicker" placeholder="Choose a chemical…" onclick="openChemicalPicker('chemB')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openChemicalPicker('chemB')}"></div></div><div><label for="amtB">Volume (L)</label><input id="amtB" type="number" step="any" placeholder="1.00"></div></div></div>
 <div style="margin-top:14px"><label for="rMethod">Crafting method</label><select disabled id="rMethod"><option value="">Unspecified</option><option>Beaker</option><option>Vacuum</option><option>Fire</option><option>Centrifuge</option></select></div><datalist id="chemList"></datalist><div class="actions"><button class="primary" onclick="calculate()">Calculate batch ↗</button><button id="editRecipeButton" onclick="toggleRecipeEditing()">Edit recipe</button><button id="saveRecipeButton" hidden onclick="saveRecipeDraft()">Save recipe draft</button></div><div id="output" class="result" aria-live="polite"></div><div id="builderNotice" class="small notice" aria-live="polite"></div></section>
-<div><section class="box"><div class="panel-head"><h2><span class="number">02</span>Recipe archive</h2><span class="tag" id="recipeCount"></span></div><label for="savedRecipes">Saved formula</label><div class="toolbar"><select id="savedRecipes"></select><button onclick="loadRecipe()">Load</button></div><div class="divider"></div><div class="actions"><button onclick="exportRecipes()">↓ Export JSON</button></div><p class="small" style="margin-top:13px">Temporary recipe editing is enabled. Drafts save in this browser; export JSON and send it to @noway2887 to update the shared site. Base and sample prices can be tested in the chemical registry.</p></section>
+<div><section class="box"><div class="panel-head"><h2><span class="number">02</span>Recipe archive</h2><span class="tag" id="recipeCount"></span></div><label for="savedRecipes">Saved formula</label><div class="toolbar"><select id="savedRecipes"></select><button onclick="loadRecipe()">Load</button></div><div class="divider"></div><div class="actions"><button onclick="exportRecipes()">↓ Export JSON</button><button type="button" onclick="resetBrowserDrafts('recipes')">Reset recipe drafts</button></div><p class="small" style="margin-top:13px">Temporary recipe editing is enabled. Drafts save in this browser; export JSON and send it to @noway2887 to update the shared site. Base and sample prices can be tested in the chemical registry.</p></section>
 <section class="box"><div class="panel-head"><h2><span class="number">03</span>Batch requirements</h2></div><p class="small" style="margin-bottom:18px">See the ingredients needed and choose to buy or make each refined chemical based on its lower cost.</p><div class="req-fields"><div><label for="reqRecipe">Output recipe</label><select id="reqRecipe"></select></div><div><label for="reqAmount">Target output (L)</label><input id="reqAmount" type="number" step="0.01" placeholder="1.00"></div></div><div class="actions"><button onclick="showRequirements()">Show requirements ↗</button></div><div id="reqOutput" class="result small" aria-live="polite">Choose a formula and enter your target volume.</div></section></div>
-<div class="full"><button id="registryToggle" aria-expanded="false" aria-controls="chemicalRegistry" onclick="toggleRegistry()" style="margin-bottom:18px">Show chemical registry / edit prices</button></div><section id="chemicalRegistry" class="box full" hidden><div class="panel-head"><h2><span class="number">04</span>Chemical registry <span class="small" id="chemicalCount"></span></h2><input class="search" id="chemicalSearch" aria-label="Search chemical registry" placeholder="Search chemicals…" oninput="filterChemicals()"></div><p class="small">Temporary price testing: edit base and sample prices below. Changes save in this browser and update crafting costs.</p><label style="margin-top:14px;display:flex;align-items:center;gap:9px"><input id="editablePricesOnly" type="checkbox" style="width:auto" onchange="filterChemicals()">Editable prices only</label><div class="table-scroll"><table id="chemTable"></table></div><div class="actions"></div></section>
+<div class="full"><button id="registryToggle" aria-expanded="false" aria-controls="chemicalRegistry" onclick="toggleRegistry()" style="margin-bottom:18px">Show chemical registry / edit prices</button></div><section id="chemicalRegistry" class="box full" hidden><div class="panel-head"><h2><span class="number">04</span>Chemical registry <span class="small" id="chemicalCount"></span></h2><input class="search" id="chemicalSearch" aria-label="Search chemical registry" placeholder="Search chemicals…" oninput="filterChemicals()"></div><p class="small">Temporary price testing: edit base and sample prices below. Changes save in this browser and update crafting costs.</p><label style="margin-top:14px;display:flex;align-items:center;gap:9px"><input id="editablePricesOnly" type="checkbox" style="width:auto" onchange="filterChemicals()">Editable prices only</label><div class="table-scroll"><table id="chemTable"></table></div><div class="actions"><button type="button" onclick="resetBrowserDrafts('prices')">Reset test prices</button></div></section>
 </main>
 <section id="pureXView" hidden role="tabpanel" aria-labelledby="mapTab" class="box full">
 <div class="map-intro"><div><div class="eyebrow">SCP-RP · CLASS X SYNTHESIS</div><h2 style="font-size:25px;margin-top:5px">Pure MN-X09-07 process map</h2><p>Follow each branch from acquired samples and base chemicals through its intermediate recipes to the final Pure X batch.</p></div><div class="map-controls"><div class="map-layout-switch" role="group" aria-label="Map layout"><button id="pureXHorizontalButton" type="button" aria-pressed="false" onclick="setPureXMapLayout('horizontal')">Current flow</button><button id="pureXExampleButton" type="button" aria-pressed="true" onclick="setPureXMapLayout('example')">Example layout</button></div><button type="button" onclick="changePureXMapZoom(-0.1)" aria-label="Zoom out">−</button><button type="button" onclick="resetPureXMapZoom()">Reset zoom</button><button type="button" onclick="changePureXMapZoom(0.1)" aria-label="Zoom in">+</button></div></div>
@@ -1204,6 +1204,30 @@ function exportRecipes(){ let d=JSON.stringify(recipes,null,2);
   let a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([d],{type:"application/json"}));
   a.download="recipes.json"; a.click();
 }
+
+function resetBrowserDrafts(kind){
+  const settings={recipes:{key:"chemcalcRecipeDrafts",label:"saved recipe drafts"},prices:{key:"chemcalcPriceDrafts",label:"test price changes"}}[kind];
+  if(!settings)return;
+  if(!localStorage.getItem(settings.key)){builderNotice.textContent="There are no "+settings.label+" to reset.";return;}
+  if(!window.confirm("Remove "+settings.label+" from this browser? This cannot be undone."))return;
+  localStorage.removeItem(settings.key);window.location.reload();
+}
+
+document.addEventListener("keydown",event=>{
+  const target=event.target;
+  if(target instanceof HTMLElement&&(target.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)))return;
+  if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="k"){
+    event.preventDefault();
+    if(!chemicalPicker.open){switchWorkspace("calculator");openChemicalPicker("chemA");}
+    return;
+  }
+  if(event.key==="/"&&!event.ctrlKey&&!event.metaKey&&!event.altKey){
+    event.preventDefault();
+    if(!referenceView.hidden)referenceSearch.focus();
+    else if(!chemicalRegistry.hidden)chemicalSearch.focus();
+    else{switchWorkspace("calculator");openChemicalPicker("chemA");}
+  }
+});
 
 </script>
 </body>
