@@ -32,7 +32,7 @@
 .map-scroll{overflow:auto;max-height:none;border:1px solid var(--line);border-radius:0;background:#091116}
 .map-scroll.example-layout{overflow-x:auto;overflow-y:hidden;max-height:none;border-color:#aaa;border-radius:0;background:#fff}
 .pure-x-svg{display:block;max-width:none}
-.map-scroll.example-layout .pure-x-svg{width:calc(100% * var(--map-zoom, 1));height:auto;max-width:none}
+.map-scroll.example-layout .pure-x-svg{width:auto;height:auto;max-width:none}
 @media(max-width:650px){.map-summary{grid-template-columns:1fr}.map-intro{flex-direction:column}.map-controls{width:100%}}
 </style>
 </head>
@@ -765,138 +765,7 @@ function mapMethodColor(method){
  return ({Beaker:"#58a6ff",Vacuum:"#69cf91",Fire:"#ff625f",Centrifuge:"#b891ff"})[method]||"#71808a";
 }
 function mapSafeText(value){return escapeHTML(String(value??""));}
-function renderReferenceStyleMap(){
- const root="Pure MN-X09-07",nodes=new Map(),order=[],forceBase=new Set(["Duloxetine"]);
- function collect(name,stack=[]){
-  name=canonicalName(name);if(nodes.has(name)||stack.includes(name))return;
-  const recipe=forceBase.has(name)?null:(recipes[name]||null);nodes.set(name,{name,recipe});order.push(name);
-  if(recipe){collect(recipe.a,[...stack,name]);collect(recipe.b,[...stack,name]);}
- }
- collect(root);
- // Compare each in-map recipe with the cheapest available way to obtain its inputs.
- // Recipe unit costs account for input ratios and yield; intermediate inputs may
- // themselves be purchased when their registry price beats their craft cost.
- const purchaseCheaper=new Map(),costMemo=new Map();
- function cheapestUnitCost(name,stack=[]){
-  name=canonicalName(name);
-  if(costMemo.has(name))return costMemo.get(name);
-  if(stack.includes(name))return Number(chemistPrices[name]);
-  const buy=Number(chemistPrices[name]);
-  const recipe=recipes[name];
-  let craft=Infinity;
-  if(recipe&&Number(recipe.y)>0){
-   const a=cheapestUnitCost(recipe.a,[...stack,name]),b=cheapestUnitCost(recipe.b,[...stack,name]);
-   const la=Number(recipe.la??1),lb=Number(recipe.lb??1);
-   if(Number.isFinite(a)&&Number.isFinite(b))craft=(a*la+b*lb)/(Number(recipe.y)*(la+lb));
-  }
-  const best=Number.isFinite(buy)?Math.min(buy,craft):craft;
-  costMemo.set(name,best);
-  if(recipe&&Number.isFinite(buy)&&buy<craft)purchaseCheaper.set(name,buy);
-  return best;
- }
- for(const name of order)cheapestUnitCost(name);
- if(!nodes.get(root)?.recipe){pureXMapStage.innerHTML='<p class="small" style="padding:22px">The Pure MN-X09-07 recipe is missing.</p>';return;}
- const displayNodes=new Map(nodes),displayOrder=order.slice(),inputDisplayId=new Map(),point=new Map();
- const sourceCoords={
-  "Setraline|0":[641,36],"Setraline|1":[535,36],
-  "Rubidolbenotine|1":[348,224],
-  "AMN-A103|1":[482,96],"AMN-B112|0":[634,155],
-  "Rubidol R-33|0":[348,165],"Rubidol R-33|1":[249,165],
-  "Potent Duloxetine|1":[741,263],
-  "Betonine|0":[126,201],"Betonine|1":[126,246],
-  "Epilorine|1":[642,443],"Ventanyl|1":[763,414],
-  "Marcoline|0":[895,333],"Marcoline|1":[895,388],
-  "Liquid Anima|0":[290,353],"Liquid Anima|1":[157,353],
-  "AM-X22|0":[321,413],
-  "MN-06|1":[628,502],
-  "Unstable Liquid Reality|0":[72,520],"Unstable Liquid Reality|1":[72,567],
-  "Stable Quantum Matter|0":[72,615],"Stable Quantum Matter|1":[72,662],
-  "Low Grade Ami-Blocker|1":[850,501],
-  "High Grade Ami-Blocker|1":[762,586],
-  "Y-Blocker|1":[970,586]
- };
- const productCoords={
-  "Setraline":[589,96],"AMN-A103":[535,155],"AMN-B112":[535,224],"AMN-C227":[535,303],
-  "Rubidol R-33":[741,201],"Potent Duloxetine":[625,225],"Betonine":[249,224],"Rubidolbenotine":[348,301],
-  "AMN-D045":[427,413],"Epilorine":[527,413],"Ventanyl":[642,388],"Marcoline":[763,359],
-  "Liquid Anima":[222,413],"AM-X22":[322,468],"AMN-E269":[427,468],"AMN-F762-R":[374,526],
-  "MN-06":[499,526],"Unstable Liquid Reality":[210,548],"Stable Quantum Matter":[210,638],
-  "N-HU-23X":[323,596],"Impure MN-X09-07":[427,587],"Pure MN-X09-07":[373,669],
-  "Low Grade Ami-Blocker":[762,526],"High Grade Ami-Blocker":[628,555],"Y-Blocker":[852,555]
- };
- function addSource(consumer,index,inputName,coords){
-  const id="source:"+consumer+":"+index;displayNodes.set(id,{name:inputName,recipe:null});displayOrder.push(id);inputDisplayId.set(consumer+"|"+index,id);
-  point.set(id,{cx:coords[0],cy:coords[1]});
- }
- for(const name of order){
-  const item=nodes.get(name);if(!item.recipe)continue;
-  const inputNames=[canonicalName(item.recipe.a),canonicalName(item.recipe.b)];
-  inputNames.forEach((input,index)=>{
-   const forcedRaw=(name==="Marcoline"&&input==="Betonine")||(name==="Rubidolbenotine"&&input==="Rubidol R-33")||!nodes.get(input)?.recipe;
-   if(forcedRaw){const key=name+"|"+index,coords=sourceCoords[key];if(coords)addSource(name,index,input,coords);}
-  });
- }
- const rightAlias="alias:Unstable Liquid Reality:right";
- displayNodes.set(rightAlias,{name:"Unstable Liquid Reality",recipe:nodes.get("Unstable Liquid Reality").recipe,alias:true});displayOrder.push(rightAlias);point.set(rightAlias,{cx:970,cy:528});
- const rightAliasInputs=[];
- for(const [index,name,coords] of [[0,"Interdimensional Matter",[1084,500]],[1,"Decaying Matter",[1084,547]]]){const id="source:"+rightAlias+":"+index;displayNodes.set(id,{name,recipe:null});displayOrder.push(id);point.set(id,{cx:coords[0],cy:coords[1]});rightAliasInputs.push(id);}
- for(const [name,xy] of Object.entries(productCoords))if(displayNodes.has(name))point.set(name,{cx:xy[0],cy:xy[1]});
- const W=1143,H=728;
- const rawSourceLabels={"source:alias:Unstable Liquid Reality:right:0":"106 Samples","source:alias:Unstable Liquid Reality:right:1":"0-35 Samples","source:Marcoline:1":"Chemist","source:Rubidolbenotine:1":"Scavenged","source:AM-X22:1":"","source:Potent Duloxetine:1":"Chemist","source:Liquid Anima:0":"323 Samples","source:Liquid Anima:1":"8854 Samples","source:AM-X22:0":"","source:High Grade Ami-Blocker:0":"008 Samples","source:High Grade Ami-Blocker:1":"0-96 Samples","source:Unstable Liquid Reality:0":"0-35 Samples","source:Unstable Liquid Reality:1":"106 Samples","source:Marcoline:0":"860 Samples"};
- function dims(item,id){
-  const name=item.name,info=referenceInfo(name),raw=!item.recipe,acquired=info.acquisition||"Acquisition not listed",acq=raw?(rawSourceLabels[id]!==undefined?rawSourceLabels[id]:name==="Amnesium"&&String(acquired).includes("939")?"939 Samples":acquired):"";
-  const shownName=({"Methyltestonerone":"Methyltestosterone","2-Napthol":"2-Naphthol","Brodamide":"Brodamine","SCP-323 Host Blood":"323 Host Blood","SCP-860-2 Blood":"SCP-860-02 Blood","SCP-008-2 Blood":"008 Blood"})[name]||name;
-  const titleLines=[];let line="";for(const word of shownName.split(/\s+/)){if(line&&(line+" "+word).length>18){titleLines.push(line);line=word;}else line=line?line+" "+word:word;}if(line)titleLines.push(line);
-  const widest=Math.max(...titleLines.map(x=>x.length),Math.min(18,acq.length));
-  const w=Math.max(72,Math.min(122,widest*5.1+14));
-  const buyPrice= !raw?purchaseCheaper.get(name):undefined;
-  return {w,h:raw?36:buyPrice!==undefined?46:32,raw,acq,titleLines,buyPrice};
- }
- const dimsById=new Map(displayOrder.map(id=>[id,dims(displayNodes.get(id),id)]));
- const inputId=(consumer,index,input)=>{
-  if(input==="Unstable Liquid Reality"&&consumer==="Y-Blocker")return rightAlias;
-  return inputDisplayId.get(consumer+"|"+index)||input;
- };
- const paths=[],pathSegments=[];
- function addPath(fromId,toId,method){
-  const from=point.get(fromId),to=point.get(toId),fd=dimsById.get(fromId),td=dimsById.get(toId);if(!from||!to||!fd||!td)return;
-  const dx=to.cx-from.cx,dy=to.cy-from.cy,color=mapMethodColor(method);let sx,sy,tx,ty,path,segments=[];
-  if(Math.abs(dy)<13){sx=dx>=0?from.cx+fd.w/2:from.cx-fd.w/2;sy=from.cy;tx=dx>=0?to.cx-td.w/2:to.cx+td.w/2;ty=to.cy;const mx=(sx+tx)/2;path='M '+sx+' '+sy+' H '+mx+' V '+ty+' H '+tx;segments=[["h",sx,sy,mx,sy],["v",mx,sy,mx,ty],["h",mx,ty,tx,ty]];}
-  else if(dy>0){sx=from.cx;sy=from.cy+fd.h/2;tx=to.cx;ty=to.cy-td.h/2;const my=sy+Math.max(10,(ty-sy)*.52);path='M '+sx+' '+sy+' V '+my+' H '+tx+' V '+ty;segments=[["v",sx,sy,sx,my],["h",sx,my,tx,my],["v",tx,my,tx,ty]];}
-  else{sx=dx>=0?from.cx+fd.w/2:from.cx-fd.w/2;sy=from.cy;tx=dx>=0?to.cx-td.w/2:to.cx+td.w/2;ty=to.cy;const mx=(sx+tx)/2;path='M '+sx+' '+sy+' H '+mx+' V '+ty+' H '+tx;segments=[["h",sx,sy,mx,sy],["v",mx,sy,mx,ty],["h",mx,ty,tx,ty]];}
-  pathSegments.push(...segments);paths.push('<path d="'+path+'" fill="none" stroke="'+color+'" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#refArrow-'+color.slice(1)+')"/>');
- }
- for(const name of order){
-  const out=nodes.get(name);if(!out.recipe)continue;
-  [canonicalName(out.recipe.a),canonicalName(out.recipe.b)].forEach((input,index)=>addPath(inputId(name,index,input),name,name===root?"Fire":out.recipe.method));
- }
- rightAliasInputs.forEach(id=>addPath(id,rightAlias,"Fire")); const cards=[],badges=[];
- for(const id of displayOrder){
-  const item=displayNodes.get(id),p=point.get(id),d=dimsById.get(id);if(!p||!d)continue;
-  const info=referenceInfo(item.name),isRoot=item.name===root,scavenged=(info.acquisition||"").toLowerCase().includes("scavenged"),gray=d.raw&&(scavenged||d.acq.toLowerCase().includes("scavenged")||item.name==="Amnesium"||item.name==="Brodamide"||item.name==="Rubidol R-33");
-  const fill=isRoot?"#080808":gray?"#d7d7d7":"#ffffff",stroke=isRoot?"#bd7b00":"#111111",left=p.cx-d.w/2,top=p.cy-d.h/2;
-  const startY=d.buyPrice!==undefined?(d.titleLines.length>1?p.cy-9:p.cy-3):(d.titleLines.length>1?p.cy-3:p.cy+3);
-  const title='<text x="'+p.cx+'" y="'+startY+'" fill="'+(isRoot?"#fff":"#111")+'" font-size="9.3" font-weight="700" text-anchor="middle">'+d.titleLines.slice(0,2).map((line,i)=>'<tspan x="'+p.cx+'" dy="'+(i?10:0)+'">'+mapSafeText(line)+'</tspan>').join("")+'</text>';
-  const source=d.raw?(d.acq.length>19?d.acq.slice(0,18)+"…":d.acq):"";
-  const subtitle=d.raw?'<text x="'+p.cx+'" y="'+(top+d.h-4)+'" fill="#333" font-size="8.2" font-weight="600" text-anchor="middle">'+mapSafeText(source)+'</text>':d.buyPrice!==undefined?'<text x="'+p.cx+'" y="'+(p.cy+14)+'" fill="#12633a" font-size="8.5" font-weight="800" text-anchor="middle">BUY · $'+mapSafeText(d.buyPrice)+'/L</text>':"";
-  cards.push('<g><rect x="'+left+'" y="'+top+'" width="'+d.w+'" height="'+d.h+'" rx="2" fill="'+(d.buyPrice!==undefined?"#e8f5ec":fill)+'" stroke="'+(d.buyPrice!==undefined?"#237547":stroke)+'" stroke-width="'+(isRoot?1.7:1.2)+'"/>'+title+subtitle+'</g>');
-  if(item.recipe){const yieldLabels={"Setraline":"48.5%","AMN-A103":"49.7%","AMN-B112":"49.9%","AMN-C227":"49.6%","AMN-D045":"39.80%","AMN-E269":"24.90%","AMN-F762-R":"19.20%","Impure MN-X09-07":"19.20%","Pure MN-X09-07":"4.95%","Betonine":"49%","Rubidolbenotine":"74.85%","Potent Duloxetine":"39.90%","Epilorine":"49.80%","Liquid Anima":"48%","AM-X22":"9.70%","Ventanyl":"48%","Marcoline":"40%","MN-06":"24.25%","Unstable Liquid Reality":"24.80%","Stable Quantum Matter":"58.20%","N-HU-23X":"24%","Low Grade Ami-Blocker":"24%","High Grade Ami-Blocker":"24%","Y-Blocker":"62%"};const pct=yieldLabels[item.name]??((Number(item.recipe.y)*100).toFixed(2).replace(/0+$/,"").replace(/\.$/,"")+"%");const bw=39,bh=16,gap=4;const candidates=[
-   [left+d.w-bw,top-bh-gap],[left,top-bh-gap],
-   [left+d.w+gap,p.cy-bh/2],[left-bw-gap,p.cy-bh/2],
-   [left+d.w-bw,top+d.h+gap],[left,top+d.h+gap],
-   [p.cx-bw/2,top-bh-gap],[p.cx-bw/2,top+d.h+gap]
-  ];const occupied=displayOrder.filter(other=>other!==id).map(other=>{const q=point.get(other),qd=dimsById.get(other);return q&&qd?{x:q.cx-qd.w/2,y:q.cy-qd.h/2,w:qd.w,h:qd.h}:null;}).filter(Boolean);occupied.push({x:876,y:36,w:255,h:83},{x:1017,y:145,w:115,h:62},...badges.map(b=>b.rect));let best=null,bestScore=Infinity;
-  for(let rank=0;rank<candidates.length;rank++){const raw=candidates[rank],bx=Math.max(2,Math.min(W-bw-2,raw[0])),by=Math.max(2,Math.min(H-bh-2,raw[1]));let score=rank*.01;for(const o of occupied){const overlap=Math.max(0,Math.min(bx+bw,o.x+o.w)-Math.max(bx,o.x))*Math.max(0,Math.min(by+bh,o.y+o.h)-Math.max(by,o.y));score+=overlap*100;}for(const seg of pathSegments){const [axis,x1,y1,x2,y2]=seg;if(axis==="h"){const ox=Math.max(0,Math.min(bx+bw,Math.max(x1,x2))-Math.max(bx,Math.min(x1,x2)));if(ox>0&&by<=y1+4&&by+bh>=y1-4)score+=ox*8;}else{const oy=Math.max(0,Math.min(by+bh,Math.max(y1,y2))-Math.max(by,Math.min(y1,y2)));if(oy>0&&bx<=x1+4&&bx+bw>=x1-4)score+=oy*8;}}if(score<bestScore){bestScore=score;best={x:bx,y:by};}}
-  const bx=best.x,by=best.y;badges.push({rect:{x:bx,y:by,w:bw,h:bh},svg:'<g><rect x="'+bx+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="2.5" fill="#b51d17" stroke="#111" stroke-width=".8"/><text x="'+(bx+bw/2)+'" y="'+(by+11.5)+'" fill="#fff" font-size="8.6" font-weight="800" text-anchor="middle">'+pct+'</text></g>'});}
- }
- const defs='<defs>'+["58a6ff","69cf91","ff625f","b891ff","71808a"].map(c=>'<marker id="refArrow-'+c+'" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L7,3.5 L0,7 Z" fill="#'+c+'"/></marker>').join("")+'</defs>';
- const note='<g font-family="system-ui,sans-serif" font-weight="700" fill="#111"><rect x="876" y="36" width="255" height="96" fill="#fff" stroke="#111" stroke-width="1.3"/><text x="1003" y="50" font-size="9.2" text-anchor="middle"><tspan x="1003">Note:</tspan><tspan x="1003" dy="13">If boxes are gray, the path costs more</tspan><tspan x="1003" dy="12">than the item is worth or it could have</tspan><tspan x="1003" dy="12">been scavenged for free.</tspan><tspan x="1003" dy="12">The red boxes indicate the yields for each chem.</tspan><tspan x="1003" dy="12">Green inset = cheaper chemist purchase.</tspan></text><rect x="1017" y="145" width="115" height="62" fill="#fff" stroke="#111" stroke-width="1.2"/><text x="1022" y="158" font-size="10">Legend:</text>'+[['58a6ff','Blue = Beaker'],['69cf91','Green = Vacuum'],['ff625f','Red = Fire'],['b891ff','Purple = Centrifuge']].map((x,i)=>'<text x="1022" y="'+(170+i*9)+'" fill="#'+x[0]+'" font-size="9.5">'+mapSafeText(x[1])+'</text>').join("")+'</g>';
- const svg='<svg class="pure-x-svg" xmlns="http://www.w3.org/2000/svg" width="'+Math.round(W*pureXMapZoom)+'" height="'+Math.round(H*pureXMapZoom)+'" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Recipe map aligned to the supplied example, showing all steps and inputs for Pure MN-X09-07">'+defs+'<rect width="100%" height="100%" fill="#fff"/>'+paths.join("")+cards.join("")+badges.map(b=>b.svg).join("")+note+'</svg>';
- pureXMapSize={width:W,height:H};pureXMapStage.classList.add("example-layout");pureXMapStage.setAttribute("aria-label","Example-photo aligned recipe map");pureXMapStage.style.setProperty("--map-zoom",pureXMapZoom);pureXMapStage.innerHTML=svg;
- const steps=displayOrder.filter(id=>displayNodes.get(id).recipe).length;const inputs=displayOrder.length-steps;pureXMapStepCount.textContent=inputs+" visible inputs · "+steps+" visible steps";
-}
 function renderPureXMap(){
- if(pureXMapLayout==="example"){renderReferenceStyleMap();return;}
  const root="Pure MN-X09-07",nodes=new Map(),order=[];
  function collect(name,stack=[]){
   name=canonicalName(name);if(nodes.has(name)||stack.includes(name))return;
@@ -948,8 +817,8 @@ function renderPureXMap(){
  const cards=[],badges=[];
  for(const key of displayOrder){const p=points.get(key),item=displayNodes.get(key),name=item.name,recipe=item.recipe;if(!p)continue;const info=referenceInfo(name),isRoot=name===root;
   const fill=exampleLayout?(isRoot?"#080808":recipe?"#ffffff":(info.acquisition||"").toLowerCase().includes("scavenged")?"#d6d6d6":"#ffffff"):(isRoot?"#20392c":recipe?"#13231d":"#10191f"),stroke=exampleLayout?"#111111":(isRoot?"#9be4b4":recipe?"#365747":"#34444d");
-  const words=name.split(/\s+/),lines=[];let line="";for(const word of words){if(line&&(line+" "+word).length>17){lines.push(line);line=word;}else line=line?line+" "+word:word;}if(line)lines.push(line);
-  const shown=exampleLayout?lines.slice(0,2):[name],font=exampleLayout?9.7:14,baseY=p.y+(exampleLayout?(shown.length>1?15:23):34),labelColor=isRoot&&exampleLayout?"#ffffff":exampleLayout?"#111111":"#e4edf0";
+  const displayName=name==="AMN-F762-R"?"Class F (AMN-F762-R)":name;const words=displayName.split(/\s+/),lines=[];let line="";for(const word of words){if(line&&(line+" "+word).length>17){lines.push(line);line=word;}else line=line?line+" "+word:word;}if(line)lines.push(line);
+  const shown=exampleLayout?lines.slice(0,2):[displayName],font=exampleLayout?9.7:14,baseY=p.y+(exampleLayout?(shown.length>1?15:23):34),labelColor=isRoot&&exampleLayout?"#ffffff":exampleLayout?"#111111":"#e4edf0";
   const label='<text x="'+(p.x+nodeW/2)+'" y="'+baseY+'" fill="'+labelColor+'" font-size="'+font+'" font-weight="700" text-anchor="middle">'+shown.map((part,i)=>'<tspan x="'+(p.x+nodeW/2)+'" dy="'+(i?10.5:0)+'">'+mapSafeText(part)+'</tspan>').join("")+'</text>';
   const acquisition=recipe?"":(info.acquisition||"Acquisition not listed"),sourceLine=acquisition.length>18?acquisition.slice(0,17)+"…":acquisition;
   const sourceDetail=exampleLayout&&!recipe?'<text x="'+(p.x+nodeW/2)+'" y="'+(p.y+39)+'" fill="#333" font-size="8.4" text-anchor="middle">'+mapSafeText(sourceLine)+'</text>':"";
