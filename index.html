@@ -53,7 +53,7 @@
 <div class="full"><button id="registryToggle" aria-expanded="false" aria-controls="chemicalRegistry" onclick="toggleRegistry()" style="margin-bottom:18px">Show chemical registry / edit prices</button></div><section id="chemicalRegistry" class="box full" hidden><div class="panel-head"><h2><span class="number">04</span>Chemical registry <span class="small" id="chemicalCount"></span></h2><input class="search" id="chemicalSearch" aria-label="Search chemical registry" placeholder="Search chemicals…" oninput="filterChemicals()"></div><p class="small">Temporary price testing: edit base and sample prices below. Changes save in this browser and update crafting costs.</p><label style="margin-top:14px;display:flex;align-items:center;gap:9px"><input id="editablePricesOnly" type="checkbox" style="width:auto" onchange="filterChemicals()">Editable prices only</label><div class="table-scroll"><table id="chemTable"></table></div><div class="actions"><button type="button" onclick="resetBrowserDrafts('prices')">Reset test prices</button></div></section>
 </main>
 <section id="pureXView" hidden role="tabpanel" aria-labelledby="mapTab" class="box full">
-<div class="map-intro"><div><div class="eyebrow">SCP-RP · CLASS X SYNTHESIS</div><h2 style="font-size:25px;margin-top:5px">Pure MN-X09-07 process map</h2><p>Follow each branch from acquired samples and base chemicals through its intermediate recipes to the final Pure X batch.</p></div><div class="map-controls"><div class="map-layout-switch" role="group" aria-label="Map layout"><button id="pureXHorizontalButton" type="button" aria-pressed="false" onclick="setPureXMapLayout('horizontal')">Current flow</button><button id="pureXExampleButton" type="button" aria-pressed="true" onclick="setPureXMapLayout('example')">Example layout</button></div><button type="button" onclick="changePureXMapZoom(-0.1)" aria-label="Zoom out">−</button><button type="button" onclick="resetPureXMapZoom()">Reset zoom</button><button type="button" onclick="changePureXMapZoom(0.1)" aria-label="Zoom in">+</button></div></div>
+<div class="map-intro"><div><div class="eyebrow">SCP-RP · CLASS X SYNTHESIS</div><h2 style="font-size:25px;margin-top:5px">Pure MN-X09-07 process map</h2><p>Start at Pure MN-X09-07 and follow the branches downward to its ingredients; red tags show recipe yields.</p></div><div class="map-controls"><div class="map-layout-switch" role="group" aria-label="Map layout"><button id="pureXHorizontalButton" type="button" aria-pressed="false" onclick="setPureXMapLayout('horizontal')">Current flow</button><button id="pureXExampleButton" type="button" aria-pressed="true" onclick="setPureXMapLayout('example')">Example layout</button></div><button type="button" onclick="changePureXMapZoom(-0.1)" aria-label="Zoom out">−</button><button type="button" onclick="resetPureXMapZoom()">Reset zoom</button><button type="button" onclick="changePureXMapZoom(0.1)" aria-label="Zoom in">+</button></div></div>
 <span id="pureXMapStepCount" hidden></span>
 <div id="pureXMapStage" class="map-scroll" role="region" aria-label="Scrollable recipe map"></div>
 </section>
@@ -785,8 +785,8 @@ function renderPureXMap(){
  const maxRank=Math.max(...layers.keys()),points=new Map();let width,height;
  if(exampleLayout){
   const cols=9,slotX=nodeW+colGap,tierGap=18,levels=Math.max(...displayLayers.keys());let bandY=padY;width=padX*2+cols*slotX-colGap+180;
-  for(let level=0;level<=levels;level++){
-   const names=displayLayers.get(level)||[],recipesHere=names.filter(id=>displayNodes.get(id)?.recipe).sort((a,b)=>Number(a===trunk.find(n=>rank(n)===level))?-1:Number(b===trunk.find(n=>rank(n)===level))?1:0);
+  for(let visualLevel=0;visualLevel<=levels;visualLevel++){
+   const level=levels-visualLevel,names=displayLayers.get(level)||[],recipesHere=names.filter(id=>displayNodes.get(id)?.recipe).sort((a,b)=>Number(a===trunk.find(n=>rank(n)===level))?-1:Number(b===trunk.find(n=>rank(n)===level))?1:0);
    const rowCount=Math.max(1,Math.ceil(recipesHere.length/3));
    for(let row=0;row<rowCount;row++){
     const group=recipesHere.slice(row*3,row*3+3),usedCols=group.length===1?[4]:group.length===2?(group.includes(trunk.find(n=>rank(n)===level))?[4,7]:[2,6]):[1,4,7];
@@ -809,7 +809,7 @@ function renderPureXMap(){
    if(exampleLayout){
     const fc=from.x+nodeW/2,tc=to.x+nodeW/2,fy=from.y+nodeH/2,tyc=to.y+nodeH/2;
     if(from.y===to.y){if(from.x<to.x){sx=from.x+nodeW;tx=to.x;}else{sx=from.x;tx=to.x+nodeW;}sy=ty=fy;const mid=(sx+tx)/2;path='M '+sx+' '+sy+' H '+mid+' V '+ty+' H '+tx;}
-    else{sx=fc;sy=from.y+nodeH;tx=tc;ty=to.y;const mid=sy+Math.max(9,(ty-sy)/2);path='M '+sx+' '+sy+' V '+mid+' H '+tx+' V '+ty;}
+    else if(from.y<to.y){sx=fc;sy=from.y+nodeH;tx=tc;ty=to.y;const mid=sy+Math.max(9,(ty-sy)/2);path='M '+sx+' '+sy+' V '+mid+' H '+tx+' V '+ty;}else{sx=fc;sy=from.y;tx=tc;ty=to.y+nodeH;const mid=ty+Math.max(9,(sy-ty)/2);path='M '+sx+' '+sy+' V '+mid+' H '+tx+' V '+ty;}
    }else{sx=from.x+nodeW;sy=from.y+nodeH/2;tx=to.x;ty=to.y+nodeH/2;const mid=(sx+tx)/2;path='M '+sx+' '+sy+' H '+mid+' V '+ty+' H '+tx;}
    paths.push('<path d="'+path+'" fill="none" stroke="'+color+'" stroke-width="'+(exampleLayout?2.5:2.5)+'" stroke-linejoin="round" marker-end="url(#mapArrow-'+color.slice(1)+')"/>');
   });
