@@ -21,7 +21,7 @@
 .map-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .map-controls button{padding:8px 11px}
 .map-layout-switch{display:flex;gap:6px;padding:4px;border:1px solid var(--line);border-radius:9px;background:#0c141a}
-.map-layout-switch button{padding:7px 10px;font-size:12px}
+.map-layout-switch button{padding:7px 10px;font-size:12px}.map-layout-label{display:inline-flex;align-items:center;padding:7px 10px;font-size:12px;color:var(--accent);font-weight:700}
 .map-layout-switch button[aria-pressed="true"]{background:#22352b;color:var(--accent);border-color:#3d5a49}
 .map-scroll.example-layout{background-color:#ffffff;border-color:#aaaaaa}
 
@@ -53,7 +53,7 @@
 <div class="full"><button id="registryToggle" aria-expanded="false" aria-controls="chemicalRegistry" onclick="toggleRegistry()" style="margin-bottom:18px">Show chemical registry / edit prices</button></div><section id="chemicalRegistry" class="box full" hidden><div class="panel-head"><h2><span class="number">04</span>Chemical registry <span class="small" id="chemicalCount"></span></h2><input class="search" id="chemicalSearch" aria-label="Search chemical registry" placeholder="Search chemicals…" oninput="filterChemicals()"></div><p class="small">Temporary price testing: edit base and sample prices below. Changes save in this browser and update crafting costs.</p><label style="margin-top:14px;display:flex;align-items:center;gap:9px"><input id="editablePricesOnly" type="checkbox" style="width:auto" onchange="filterChemicals()">Editable prices only</label><div class="table-scroll"><table id="chemTable"></table></div><div class="actions"><button type="button" onclick="resetBrowserDrafts('prices')">Reset test prices</button></div></section>
 </main>
 <section id="pureXView" hidden role="tabpanel" aria-labelledby="mapTab" class="box full">
-<div class="map-intro"><div><div class="eyebrow">SCP-RP · CLASS X SYNTHESIS</div><h2 style="font-size:25px;margin-top:5px">Pure MN-X09-07 process map</h2><p>Follow the colored arrows from ingredients toward Pure MN-X09-07 at the bottom. Red tags show recipe yields.</p><p class="small" style="margin-top:8px"><strong>Yield records:</strong> This map uses your measured yields where available. The workbook lists Pure MN-X09-07 at 4.95% and Class F at 24.25%; your tests recorded 4.6% and 24.67%.</p></div><div class="map-controls"><div class="map-layout-switch" role="group" aria-label="Map layout"><button id="pureXHorizontalButton" type="button" aria-pressed="false" onclick="setPureXMapLayout('horizontal')">Current flow</button><button id="pureXExampleButton" type="button" aria-pressed="true" onclick="setPureXMapLayout('example')">Example layout</button></div><button type="button" onclick="changePureXMapZoom(-0.1)" aria-label="Zoom out">−</button><button type="button" onclick="resetPureXMapZoom()">Reset zoom</button><button type="button" onclick="changePureXMapZoom(0.1)" aria-label="Zoom in">+</button></div></div>
+<div class="map-intro"><div><div class="eyebrow">SCP-RP · CLASS X SYNTHESIS</div><h2 style="font-size:25px;margin-top:5px">Pure MN-X09-07 process map</h2><p>Follow the colored arrows from ingredients toward Pure MN-X09-07 at the bottom. Red tags show recipe yields.</p><p class="small" style="margin-top:8px"><strong>Yield records:</strong> This map uses your measured yields where available. The workbook lists Pure MN-X09-07 at 4.95% and Class F at 24.25%; your tests recorded 4.6% and 24.67%.</p></div><div class="map-controls"><div class="map-layout-switch" aria-label="Map layout"><span class="map-layout-label">Spreadsheet layout</span></div><button type="button" onclick="changePureXMapZoom(-0.1)" aria-label="Zoom out">−</button><button type="button" onclick="resetPureXMapZoom()">Reset zoom</button><button type="button" onclick="changePureXMapZoom(0.1)" aria-label="Zoom in">+</button></div></div>
 <span id="pureXMapStepCount" hidden></span>
 <div id="pureXMapStage" class="map-scroll" role="region" aria-label="Scrollable recipe map"></div>
 </section>
@@ -755,10 +755,8 @@ function switchWorkspace(view){
  if(map)renderPureXMap();
 }
 function setPureXMapLayout(layout){
- if(layout!=="horizontal"&&layout!=="example")return;
- pureXMapLayout=layout;pureXMapZoom=layout==="example"?1:0.7;
- pureXHorizontalButton.setAttribute("aria-pressed",String(layout==="horizontal"));
- pureXExampleButton.setAttribute("aria-pressed",String(layout==="example"));
+ if(layout!=="example")return;
+ pureXMapLayout="example";pureXMapZoom=1;
  renderPureXMap();
 }
 function mapMethodColor(method){
