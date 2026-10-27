@@ -58,7 +58,7 @@ let chemicals = {
   "Brodamide":450,"Calcium":750,"Chlorine":750,"Citizol-Q":2000,
   "Crystalline Blood":2500,"Decaying Matter":3000,"Dionized Water":150,
   "Duloxetine":250,"Ethanol":500,"Immortal Flesh":3500,
-  "Interdimensional Matter":2000,"Methyltestonerone":300,"O- Blood":3000,"Human Blood":500,"Saliva":500,"Toxic Blood":850,"Anomalous Liquid Metal":500,
+  "Interdimensional Matter":2500,"Methyltestonerone":300,"O- Blood":3000,"Human Blood":500,"Saliva":500,"Toxic Blood":850,"Anomalous Liquid Metal":500,
   "Orange goop":800,"Potassium":200,"Progesterone":300,
   "Propionic Acid":450,"Radioactive Fluid":1000,"Salicyclic Acid":450,
   "SCP-008-2 Blood":15000,"SCP-096 Genome":3000,
@@ -71,7 +71,7 @@ let chemicals = {
 
 try{
  const prices=JSON.parse(localStorage.getItem("chemcalcPriceDrafts")||"{}");
- for(const [name,value] of Object.entries(prices))if(typeof value==="number"&&Number.isFinite(value)&&value>=0)chemicals[name]=value;
+ for(const [name,value] of Object.entries(prices))if(typeof value==="number"&&Number.isFinite(value)&&value>=0)chemicals[name]=(name==="Interdimensional Matter"&&value===2000)?2500:value;
 }catch(e){}
 
 // Keep actual chemist/sample prices before recipe bootstrapping replaces crafted
