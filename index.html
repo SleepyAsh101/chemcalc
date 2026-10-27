@@ -767,7 +767,7 @@ function renderSalesQuote(){
   n=canonicalName(n);
   if(stack.includes(n))throw Error("Circular recipe: "+n);
   const r=recipes[n];
-  if(!r){add(baseBuy,n,volume);return;}
+  if(!r){if(stack.length===0)outputSource="BUY";else add(baseBuy,n,volume);return;}
   if(!(r.y>0&&r.y<=1&&r.la>0&&r.lb>0))throw Error("Missing or invalid yield/volumes for "+n+".");
   const buy=chemistPrices[n],craft=craftUnitCost(n,stack);
   if(buy!=null&&Number.isFinite(Number(buy))&&(craft==null||Number(buy)<craft)){
