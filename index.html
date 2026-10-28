@@ -751,10 +751,9 @@ Object.assign(chemicalReference,{"Amoxicillin":{"acquisition":"Acetone + Propion
 
 /* ===== CLASS X RECIPE MAP ===== */
 const CLASS_X_TARGET="Pure MN-X09-07";
-const mapRecipes={...defaultRecipes};
-for(const [name,base] of Object.entries(previousDefaults)){
- if(mapRecipes[name]&&base?.a&&base?.b)mapRecipes[name]={...mapRecipes[name],a:base.a,b:base.b};
-}
+const mapRecipes=Object.fromEntries(Object.entries(previousDefaults).map(([name,base])=>[
+ name,{...base,...(defaultRecipes[name]||{}),a:base.a,b:base.b}
+]));
 let recipeMapScale=1,mapBaseWidth=0,mapBaseHeight=0,mapFocusName="";
 function mapMethodClass(method){
  return ({Beaker:"Beaker",Vacuum:"Vacuum",Fire:"Fire",Centrifuge:"Centrifuge"})[method]||"Unknown";
