@@ -755,12 +755,25 @@ let recipeMapScale=1,mapBaseWidth=0,mapBaseHeight=0,mapFocusName="";
 function mapMethodClass(method){
  return ({Beaker:"Beaker",Vacuum:"Vacuum",Fire:"Fire",Centrifuge:"Centrifuge"})[method]||"Unknown";
 }
+function mapCalcPrice(name,stack=[]){
+ name=canonicalName(name);
+ const buy=chemistPrices[name],hasBuy=buy!=null&&Number.isFinite(Number(buy));
+ if(stack.includes(name))return hasBuy?Number(buy):null;
+ const r=defaultRecipes[name];let crafted=null;
+ if(r&&r.y>0&&r.y<=1&&r.la>0&&r.lb>0){
+  const next=[...stack,name],a=mapCalcPrice(r.a,next),b=mapCalcPrice(r.b,next);
+  if(a!=null&&b!=null&&Number.isFinite(a)&&Number.isFinite(b))
+   crafted=+((r.la*a+r.lb*b)/((r.la+r.lb)*r.y)).toFixed(2);
+ }
+ if(!hasBuy)return crafted;
+ return crafted==null?+Number(buy).toFixed(2):Math.min(+Number(buy).toFixed(2),crafted);
+}
 function mapCraftPathCost(name,stack=[]){
  name=canonicalName(name);
  if(stack.includes(name))return null;
- const r=recipes[name];
+ const r=defaultRecipes[name];
  if(!r||!(r.y>0&&r.y<=1&&r.la>0&&r.lb>0))return null;
- const next=[...stack,name],a=calcRecipePrice(r.a,next),b=calcRecipePrice(r.b,next);
+ const next=[...stack,name],a=mapCalcPrice(r.a,next),b=mapCalcPrice(r.b,next);
  if(a==null||b==null||!Number.isFinite(a)||!Number.isFinite(b))return null;
  return (r.la*a+r.lb*b)/((r.la+r.lb)*r.y);
 }
@@ -769,7 +782,7 @@ function mapGraph(){
  function visit(rawName){
   const name=canonicalName(rawName);
   if(nodes.has(name))return;
-  const r=recipes[name]||null;
+  const r=defaultRecipes[name]||null;
   const node={name:name,recipe:r,rank:0,order:nodes.size,x:0,y:0};
   nodes.set(name,node);
   if(!r)return;
@@ -798,16 +811,21 @@ function mapGraph(){
   if(!outgoing.has(e.from))outgoing.set(e.from,[]);
   incoming.get(e.to).push(e.from);outgoing.get(e.from).push(e.to);
  }
- function positions(){const p=new Map();for(const layer of layers)layer.forEach((n,i)=>p.set(n.name,i));return p;}
- for(let pass=0;pass<12;pass++){
-  let pos=positions();
+ const maxLayer=Math.max(...layers.map(layer=>layer.length));
+ function verticalPositions(){
+  const p=new Map();
+  for(const layer of layers)layer.forEach((n,i)=>p.set(n.name,i+(maxLayer-layer.length)/2));
+  return p;
+ }
+ for(let pass=0;pass<16;pass++){
+  let pos=verticalPositions();
   for(let r=1;r<layers.length;r++){
    layers[r].sort((a,b)=>{
     const avg=n=>{const xs=(incoming.get(n.name)||[]).map(k=>pos.get(k)).filter(Number.isFinite);return xs.length?xs.reduce((sum,x)=>sum+x,0)/xs.length:n.order;};
     return avg(a)-avg(b)||a.order-b.order;
    });
   }
-  pos=positions();
+  pos=verticalPositions();
   for(let r=layers.length-2;r>=0;r--){
    layers[r].sort((a,b)=>{
     const avg=n=>{const xs=(outgoing.get(n.name)||[]).map(k=>pos.get(k)).filter(Number.isFinite);return xs.length?xs.reduce((sum,x)=>sum+x,0)/xs.length:n.order;};
@@ -815,8 +833,7 @@ function mapGraph(){
    });
   }
  }
- const nodeW=190,nodeH=76,gapX=42,gapY=34,padX=36,padY=36;
- const maxLayer=Math.max(...layers.map(layer=>layer.length));
+ const nodeW=190,nodeH=76,gapX=60,gapY=52,padX=42,padY=42;
  mapBaseWidth=padX*2+layers.length*nodeW+(layers.length-1)*gapX;
  mapBaseHeight=padY*2+maxLayer*nodeH+(maxLayer-1)*gapY;
  layers.forEach((layer,rankIndex)=>layer.forEach((n,i)=>{
@@ -855,7 +872,7 @@ function renderRecipeMap(){
  markup+='</defs><g class="map-edges">';
  for(const e of graph.edges){
   const from=graph.nodes.get(e.from),to=graph.nodes.get(e.to),method=mapMethodClass(e.method);
-  const x1=from.x+nodeW,y1=from.y+nodeH/2,x2=to.x,y2=to.y+nodeH*(e.inputIndex===0?0.36:0.64),curve=Math.max(18,Math.min(120,(x2-x1)/2));
+  const x1=from.x+nodeW,y1=from.y+nodeH/2,x2=to.x,y2=to.y+nodeH*(e.inputIndex===0?0.28:0.72),curve=Math.max(18,Math.min(120,(x2-x1)/2));
   const d="M "+x1+" "+y1+" C "+(x1+curve)+" "+y1+" "+(x2-curve)+" "+y2+" "+x2+" "+y2;
   const edgeAttrs=' data-edge-from="'+escapeHTML(e.from)+'" data-edge-to="'+escapeHTML(e.to)+'" d="'+d+'"';
   markup+='<path class="map-roadbed"'+edgeAttrs+'></path><path class="map-edge method-'+method+'"'+edgeAttrs+' marker-end="url(#mapArrow'+method+')" aria-label="'+escapeHTML(e.method||"Method not recorded")+'"></path><path class="map-roadmark"'+edgeAttrs+'></path>';
