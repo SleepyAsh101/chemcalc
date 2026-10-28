@@ -56,7 +56,7 @@
 <p class="small">Follow the recipe branches toward Pure MN-X09-07. The map uses the calculator’s current recipe and price data.</p>
 <div class="map-toolbar">
 <div><label for="mapSearch">Find a chemical on this path</label><div class="map-search-row"><input id="mapSearch" type="search" placeholder="Search a chemical…"><button type="button" onclick="focusMapChemical()">Find</button></div></div>
-<div class="map-zoom" aria-label="Map controls"><button type="button" aria-label="Zoom out" onclick="zoomRecipeMap(-0.15)">−</button><button type="button" aria-label="Zoom in" onclick="zoomRecipeMap(0.15)">+</button><button type="button" onclick="fitRecipeMap()">Fit map</button><button type="button" onclick="clearMapFocus()">Reset highlight</button></div>
+<div class="map-zoom" aria-label="Map controls"><button type="button" aria-label="Zoom out" onclick="zoomRecipeMap(-0.15)">−</button><button type="button" aria-label="Zoom in" onclick="zoomRecipeMap(0.15)">+</button><button type="button" onclick="fitRecipeMap()">Fit width</button><button type="button" onclick="clearMapFocus()">Reset highlight</button></div>
 </div>
 <div class="map-legend" aria-label="Recipe method legend"><span><i class="map-swatch beaker"></i>Beaker</span><span><i class="map-swatch vacuum"></i>Vacuum</span><span><i class="map-swatch fire"></i>Fire</span><span><i class="map-swatch centrifuge"></i>Centrifuge</span><span><i class="map-swatch unknown"></i>Method not recorded</span><span><i class="map-keybox"></i>Buy / source route is cheaper</span><span><i class="map-yield-key">%</i>Yield</span></div>
 <div id="mapViewport" class="map-viewport" tabindex="0" aria-label="Scrollable Class X recipe map"><svg id="recipeMap" role="img" aria-label="Recipe dependencies leading to Pure MN-X09-07"></svg></div>
@@ -751,7 +751,7 @@ Object.assign(chemicalReference,{"Amoxicillin":{"acquisition":"Acetone + Propion
 
 /* ===== CLASS X RECIPE MAP ===== */
 const CLASS_X_TARGET="Pure MN-X09-07";
-let recipeMapScale=1,mapBaseWidth=0,mapBaseHeight=0,mapFocusName="";
+let recipeMapScale=1,mapBaseWidth=0,mapBaseHeight=0,mapFocusName="",mapHasFitted=false;
 function mapMethodClass(method){
  return ({Beaker:"Beaker",Vacuum:"Vacuum",Fire:"Fire",Centrifuge:"Centrifuge"})[method]||"Unknown";
 }
@@ -803,25 +803,25 @@ function mapGraph(){
   let pos=positions();
   for(let r=1;r<layers.length;r++){
    layers[r].sort((a,b)=>{
-    const avg=n=>{const xs=(incoming.get(n.name)||[]).map(k=>pos.get(k)).filter(Number.isFinite);return xs.length?xs.reduce((s,x)=>s+x,0)/xs.length:n.order;};
+    const avg=n=>{const xs=(incoming.get(n.name)||[]).map(k=>pos.get(k)).filter(Number.isFinite);return xs.length?xs.reduce((sum,x)=>sum+x,0)/xs.length:n.order;};
     return avg(a)-avg(b)||a.order-b.order;
    });
   }
   pos=positions();
   for(let r=layers.length-2;r>=0;r--){
    layers[r].sort((a,b)=>{
-    const avg=n=>{const xs=(outgoing.get(n.name)||[]).map(k=>pos.get(k)).filter(Number.isFinite);return xs.length?xs.reduce((s,x)=>s+x,0)/xs.length:n.order;};
+    const avg=n=>{const xs=(outgoing.get(n.name)||[]).map(k=>pos.get(k)).filter(Number.isFinite);return xs.length?xs.reduce((sum,x)=>sum+x,0)/xs.length:n.order;};
     return avg(a)-avg(b)||a.order-b.order;
    });
   }
  }
- const nodeW=188,nodeH=76,gapX=150,gapY=72,padX=60,padY=54;
- const maxLayer=Math.max(...layers.map(l=>l.length));
- mapBaseWidth=padX*2+maxLayer*(nodeW+gapX);
- mapBaseHeight=padY*2+layers.length*(nodeH+gapY);
- layers.forEach((layer,r)=>layer.forEach((n,i)=>{
-  n.x=padX+i*(nodeW+gapX)+(maxLayer-layer.length)*(nodeW+gapX)/2;
-  n.y=padY+r*(nodeH+gapY);
+ const nodeW=190,nodeH=76,gapX=42,gapY=24,padX=36,padY=36;
+ const maxLayer=Math.max(...layers.map(layer=>layer.length));
+ mapBaseWidth=padX*2+layers.length*nodeW+(layers.length-1)*gapX;
+ mapBaseHeight=padY*2+maxLayer*nodeH+(maxLayer-1)*gapY;
+ layers.forEach((layer,rankIndex)=>layer.forEach((n,i)=>{
+  n.x=padX+rankIndex*(nodeW+gapX);
+  n.y=padY+i*(nodeH+gapY)+(maxLayer-layer.length)*(nodeH+gapY)/2;
  }));
  return {nodes:nodes,edges:edges,width:mapBaseWidth,height:mapBaseHeight,nodeW:nodeW,nodeH:nodeH};
 }
@@ -855,8 +855,8 @@ function renderRecipeMap(){
  markup+='</defs><g class="map-edges">';
  for(const e of graph.edges){
   const from=graph.nodes.get(e.from),to=graph.nodes.get(e.to),method=mapMethodClass(e.method);
-  const x1=from.x+nodeW/2,y1=from.y+nodeH,x2=to.x+nodeW/2,y2=to.y,mid=y1+(y2-y1)/2;
-  const d="M "+x1+" "+y1+" V "+mid+" H "+x2+" V "+y2;
+  const x1=from.x+nodeW,y1=from.y+nodeH/2,x2=to.x,y2=to.y+nodeH/2,mid=x1+(x2-x1)/2;
+  const d="M "+x1+" "+y1+" H "+mid+" V "+y2+" H "+x2;
   markup+='<path class="map-edge method-'+method+'" data-edge-from="'+escapeHTML(e.from)+'" data-edge-to="'+escapeHTML(e.to)+'" d="'+d+'" marker-end="url(#mapArrow'+method+')" aria-label="'+escapeHTML(e.method||"Method not recorded")+'"></path>';
  }
  markup+='</g><g class="map-nodes">';
@@ -944,8 +944,8 @@ function zoomRecipeMap(delta){
 }
 function fitRecipeMap(){
  if(!mapViewport||!mapBaseWidth||!mapBaseHeight)return;
- const sx=(mapViewport.clientWidth-36)/mapBaseWidth,sy=(mapViewport.clientHeight-36)/mapBaseHeight;
- recipeMapScale=Math.max(0.25,Math.min(1,sx,sy));applyRecipeMapScale();mapViewport.scrollTo({left:0,top:0,behavior:"smooth"});
+ const sx=(mapViewport.clientWidth-36)/mapBaseWidth;
+ recipeMapScale=Math.max(0.58,Math.min(1,sx));applyRecipeMapScale();mapViewport.scrollTo({left:0,top:0,behavior:"smooth"});
 }
 if(mapSearch)mapSearch.addEventListener("keydown",event=>{if(event.key==="Enter")focusMapChemical();});
 
@@ -956,7 +956,7 @@ function switchWorkspace(view){
  referenceTab.setAttribute("aria-selected",String(reference));salesTab.setAttribute("aria-selected",String(sales));mapTab.setAttribute("aria-selected",String(map));
  if(reference)renderReference();
  if(sales)renderSalesQuote();
- if(map)renderRecipeMap();
+ if(map){renderRecipeMap();if(!mapHasFitted){fitRecipeMap();mapHasFitted=true;}}
 }
 function renderSalesQuote(){
  const name=canonicalName(salesRecipe.value),target=Number(salesQuantity.value),priceText=salesPrice.value;
