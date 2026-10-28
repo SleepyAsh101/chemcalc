@@ -751,6 +751,10 @@ Object.assign(chemicalReference,{"Amoxicillin":{"acquisition":"Acetone + Propion
 
 /* ===== CLASS X RECIPE MAP ===== */
 const CLASS_X_TARGET="Pure MN-X09-07";
+const mapRecipes={...defaultRecipes};
+for(const [name,base] of Object.entries(previousDefaults)){
+ if(mapRecipes[name]&&base?.a&&base?.b)mapRecipes[name]={...mapRecipes[name],a:base.a,b:base.b};
+}
 let recipeMapScale=1,mapBaseWidth=0,mapBaseHeight=0,mapFocusName="";
 function mapMethodClass(method){
  return ({Beaker:"Beaker",Vacuum:"Vacuum",Fire:"Fire",Centrifuge:"Centrifuge"})[method]||"Unknown";
@@ -759,7 +763,7 @@ function mapCalcPrice(name,stack=[]){
  name=canonicalName(name);
  const buy=chemistPrices[name],hasBuy=buy!=null&&Number.isFinite(Number(buy));
  if(stack.includes(name))return hasBuy?Number(buy):null;
- const r=defaultRecipes[name];let crafted=null;
+ const r=mapRecipes[name];let crafted=null;
  if(r&&r.y>0&&r.y<=1&&r.la>0&&r.lb>0){
   const next=[...stack,name],a=mapCalcPrice(r.a,next),b=mapCalcPrice(r.b,next);
   if(a!=null&&b!=null&&Number.isFinite(a)&&Number.isFinite(b))
@@ -771,7 +775,7 @@ function mapCalcPrice(name,stack=[]){
 function mapCraftPathCost(name,stack=[]){
  name=canonicalName(name);
  if(stack.includes(name))return null;
- const r=defaultRecipes[name];
+ const r=mapRecipes[name];
  if(!r||!(r.y>0&&r.y<=1&&r.la>0&&r.lb>0))return null;
  const next=[...stack,name],a=mapCalcPrice(r.a,next),b=mapCalcPrice(r.b,next);
  if(a==null||b==null||!Number.isFinite(a)||!Number.isFinite(b))return null;
@@ -782,7 +786,7 @@ function mapGraph(){
  function visit(rawName){
   const name=canonicalName(rawName);
   if(nodes.has(name))return;
-  const r=defaultRecipes[name]||null;
+  const r=mapRecipes[name]||null;
   const node={name:name,recipe:r,rank:0,order:nodes.size,x:0,y:0};
   nodes.set(name,node);
   if(!r)return;
