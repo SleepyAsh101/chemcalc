@@ -801,7 +801,8 @@ function mapGraph(){
    edges.push({from:child,to:name,method:r.method||"",yield:r.y,inputIndex:inputIndex});
   }
  }
-const rankMemo={};
+visit(CLASS_X_TARGET);
+ const rankMemo={};
  function rank(name,stack=[]){
   if(rankMemo[name]!=null)return rankMemo[name];
   if(stack.includes(name))return 0;
