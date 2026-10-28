@@ -795,7 +795,7 @@ function mapGraph(){
   const node={name:name,recipe:r,rank:0,order:nodes.size,x:0,y:0};
   nodes.set(name,node);
   if(!r)return;
-  for(const [input,inputIndex] of [r.a,r.b].entries()){
+  for(const [inputIndex,input] of [r.a,r.b].entries()){
    const child=String(input).trim();
    visit(child);
    edges.push({from:child,to:name,method:r.method||"",yield:r.y,inputIndex:inputIndex});
