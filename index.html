@@ -53,7 +53,7 @@
 
 <section id="mapView" hidden role="tabpanel" aria-labelledby="mapTab" class="box map-panel">
 <div class="panel-head"><div><div class="eyebrow">SCP-RP · RECIPE ROUTE</div><h2 style="font-size:25px;margin-top:5px">Path to Class X</h2></div><span class="tag" id="mapNodeCount">MAP</span></div>
-<p class="small">Follow the recipe branches toward Pure MN-X09-07. The map uses the calculator’s current recipe and price data.</p>
+<p class="small">Ingredients start on the left; follow arrows toward Pure MN-X09-07. Scroll to explore, or search to jump to a chemical.</p>
 <div class="map-toolbar">
 <div><label for="mapSearch">Find a chemical on this path</label><div class="map-search-row"><input id="mapSearch" type="search" placeholder="Search a chemical…"><button type="button" onclick="focusMapChemical()">Find</button></div></div>
 <div class="map-zoom" aria-label="Map controls"><button type="button" aria-label="Zoom out" onclick="zoomRecipeMap(-0.15)">−</button><button type="button" aria-label="Zoom in" onclick="zoomRecipeMap(0.15)">+</button><button type="button" onclick="fitRecipeMap()">Fit width</button><button type="button" onclick="clearMapFocus()">Reset highlight</button></div>
@@ -751,7 +751,7 @@ Object.assign(chemicalReference,{"Amoxicillin":{"acquisition":"Acetone + Propion
 
 /* ===== CLASS X RECIPE MAP ===== */
 const CLASS_X_TARGET="Pure MN-X09-07";
-let recipeMapScale=1,mapBaseWidth=0,mapBaseHeight=0,mapFocusName="",mapHasFitted=false;
+let recipeMapScale=1,mapBaseWidth=0,mapBaseHeight=0,mapFocusName="";
 function mapMethodClass(method){
  return ({Beaker:"Beaker",Vacuum:"Vacuum",Fire:"Fire",Centrifuge:"Centrifuge"})[method]||"Unknown";
 }
@@ -956,7 +956,7 @@ function switchWorkspace(view){
  referenceTab.setAttribute("aria-selected",String(reference));salesTab.setAttribute("aria-selected",String(sales));mapTab.setAttribute("aria-selected",String(map));
  if(reference)renderReference();
  if(sales)renderSalesQuote();
- if(map){renderRecipeMap();if(!mapHasFitted){fitRecipeMap();mapHasFitted=true;}}
+ if(map)renderRecipeMap();
 }
 function renderSalesQuote(){
  const name=canonicalName(salesRecipe.value),target=Number(salesQuantity.value),priceText=salesPrice.value;
