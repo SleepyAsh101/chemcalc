@@ -55,14 +55,15 @@
 <div class="panel-head"><div><div class="eyebrow">SCP-RP · CRAFTING ESTIMATE</div><h2 style="font-size:25px;margin-top:5px">Grenade cost calculator</h2></div><span class="tag">CUSTOM RECIPE</span></div>
 <p class="small">Enter the in-game chemicals and volume used for one grenade. Ingredient prices use the cheaper buy-or-craft price from the registry.</p>
 <div class="fields" style="margin-top:20px">
-<div><label for="grenadeName">Grenade name</label><input id="grenadeName" type="text" placeholder="e.g. Chemical grenade" oninput="renderGrenadeCost()"></div>
+<div><label for="grenadeName">Grenade name</label><input id="grenadeName" type="text" placeholder="e.g. Chemical grenade" oninput="markGrenadeCustom();renderGrenadeCost()"></div>
+<div><label for="grenadePreset">Load saved recipe</label><select id="grenadePreset" onchange="loadGrenadePreset()"><option value="">Custom recipe</option><option value="2-chloro" selected>2-Chloro</option><option value="cyanogen-chloride">Cyanogen Chloride</option><option value="amn-a">AMN-A</option><option value="red-phos">Red Phos</option></select></div>
 <div><label for="grenadeCount">Grenades in batch</label><input id="grenadeCount" type="number" min="1" step="1" value="1" oninput="renderGrenadeCost()"></div>
 <div><label for="grenadeSalePrice">Selling price per grenade ($)</label><input id="grenadeSalePrice" type="number" min="0" step="0.01" placeholder="Optional" oninput="renderGrenadeCost()"></div>
 </div>
 <div class="grenade-ingredients-head"><strong>Ingredients per grenade</strong><span class="small">Liters per grenade</span></div>
 <div id="grenadeIngredients" class="grenade-ingredients"></div>
-<button type="button" onclick="addGrenadeIngredient()">+ Add ingredient</button>
-<div id="grenadeOutput" class="result small" aria-live="polite">Add the chemicals and mL used for one grenade.</div>
+<button type="button" onclick="markGrenadeCustom();addGrenadeIngredient()">+ Add ingredient</button>
+<div id="grenadeOutput" class="result small" aria-live="polite">Add the chemical volumes used for one grenade.</div>
 </section>
 
 <footer class="footer"><span>SCP-RP / CHEMISTRY DIVISION · LOCAL TERMINAL</span><span>Contact <strong>@noway2887</strong> on Discord for any updates/fixes. Please provide evidence.</span></footer></div>
@@ -766,14 +767,32 @@ function grenadeChemicalOptions(selected=""){
  const names=[...new Set([...Object.keys(chemicals),...Object.keys(recipes)].map(canonicalName))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));
  return '<option value="">Choose a chemical…</option>'+names.map(n=>'<option value="'+escapeHTML(n)+'"'+(n===selected?' selected':'')+'>'+escapeHTML(n)+'</option>').join("")+'<option value="__custom__"'+(selected==="__custom__"?' selected':'')+'>Other / unlisted chemical</option>';
 }
+const savedGrenadeRecipes={
+ "2-chloro":{name:"2-Chloro grenade",chemical:"2-Chlorobenzylidenemalononitrile"},
+ "cyanogen-chloride":{name:"Cyanogen Chloride grenade",chemical:"Cyanogen Chloride"},
+ "amn-a":{name:"AMN-A grenade",chemical:"AMN-A103"},
+ "red-phos":{name:"Red Phos grenade",chemical:"Red Phosphorus"}
+};
+let loadingGrenadePreset=false;
+function markGrenadeCustom(){if(!loadingGrenadePreset&&grenadePreset)grenadePreset.value="";}
 function initGrenadeCalculator(){
  if(!grenadeIngredients)return;
- if(!grenadeIngredients.children.length){addGrenadeIngredient("__custom__",4.4,"Chemical");addGrenadeIngredient("Citizol-Q",2.2);}
+ if(!grenadeIngredients.children.length)loadGrenadePreset();
+}
+function loadGrenadePreset(){
+ const preset=savedGrenadeRecipes[grenadePreset.value];
+ if(!preset)return;
+ loadingGrenadePreset=true;
+ grenadeName.value=preset.name;
+ grenadeIngredients.replaceChildren();
+ addGrenadeIngredient(preset.chemical,4.4);
+ addGrenadeIngredient("Citizol-Q",2.2);
+ loadingGrenadePreset=false;
 }
 function addGrenadeIngredient(name="",amount="",customName=""){
  const row=document.createElement("div");
  row.className="grenade-ingredient-row";
- row.innerHTML='<select aria-label="Ingredient chemical" onchange="updateGrenadeIngredient(this)">'+grenadeChemicalOptions(name)+'</select><input class="grenade-amount" aria-label="Ingredient volume in liters per grenade" type="number" min="0" step="0.01" placeholder="L per grenade" value="'+escapeHTML(String(amount))+'" oninput="renderGrenadeCost()"><button type="button" aria-label="Remove ingredient" onclick="this.parentElement.remove();renderGrenadeCost()">Remove</button><div class="grenade-custom-fields" hidden><input class="grenade-custom-name" aria-label="Custom ingredient name" type="text" placeholder="Ingredient name" value="'+escapeHTML(customName)+'" oninput="renderGrenadeCost()"><input class="grenade-custom-price" aria-label="Custom ingredient price per liter" type="number" min="0" step="0.01" placeholder="Buy price per L" oninput="renderGrenadeCost()"></div>';
+ row.innerHTML='<select aria-label="Ingredient chemical" onchange="markGrenadeCustom();updateGrenadeIngredient(this)">'+grenadeChemicalOptions(name)+'</select><input class="grenade-amount" aria-label="Ingredient volume in liters per grenade" type="number" min="0" step="0.01" placeholder="L per grenade" value="'+escapeHTML(String(amount))+'" oninput="markGrenadeCustom();renderGrenadeCost()"><button type="button" aria-label="Remove ingredient" onclick="markGrenadeCustom();this.parentElement.remove();renderGrenadeCost()">Remove</button><div class="grenade-custom-fields" hidden><input class="grenade-custom-name" aria-label="Custom ingredient name" type="text" placeholder="Ingredient name" value="'+escapeHTML(customName)+'" oninput="markGrenadeCustom();renderGrenadeCost()"><input class="grenade-custom-price" aria-label="Custom ingredient price per liter" type="number" min="0" step="0.01" placeholder="Buy price per L" oninput="markGrenadeCustom();renderGrenadeCost()"></div>';
  grenadeIngredients.append(row);
  updateGrenadeIngredient(row.querySelector("select"));
 }
