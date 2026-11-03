@@ -776,9 +776,9 @@ function grenadeChemicalOptions(selected=""){
 }
 const savedGrenadeRecipes={
  "2-chloro":{name:"2-Chloro grenade",chemical:"2-Chlorobenzylidenemalononitrile",amount:4.3},
- "cyanogen-chloride":{name:"Cyanogen Chloride grenade",chemical:"Cyanogen Chloride"},
- "amn-a":{name:"AMN-A grenade",chemical:"AMN-A103"},
- "red-phos":{name:"Red Phos grenade",chemical:"Red Phosphorus"}
+ "cyanogen-chloride":{name:"Cyanogen Chloride grenade",chemical:"Cyanogen Chloride",amount:4.3},
+ "amn-a":{name:"AMN-A grenade",chemical:"AMN-A103",amount:4.3},
+ "red-phos":{name:"Red Phos grenade",chemical:"Red Phosphorus",amount:4.3}
 };
 let loadingGrenadePreset=false;
 function updateGrenadePresetStatus(){
@@ -801,7 +801,7 @@ function loadGrenadePreset(){
  loadingGrenadePreset=true;
  grenadeName.value=preset.name;
  grenadeIngredients.replaceChildren();
- addGrenadeIngredient(preset.chemical,preset.amount??4.4);
+ addGrenadeIngredient(preset.chemical,preset.amount??4.3);
  addGrenadeIngredient("Citizol-Q",2.2);
  loadingGrenadePreset=false;
  updateGrenadePresetStatus();
