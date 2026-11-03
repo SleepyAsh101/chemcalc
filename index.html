@@ -52,7 +52,7 @@
 </section>
 
 <section id="grenadeView" hidden role="tabpanel" aria-labelledby="grenadeTab" class="box">
-<div class="panel-head"><div><div class="eyebrow">SCP-RP · CRAFTING ESTIMATE</div><h2 style="font-size:25px;margin-top:5px">Grenade cost calculator</h2></div><span class="tag">CUSTOM RECIPE</span></div>
+<div class="panel-head"><div><div class="eyebrow">SCP-RP · CRAFTING ESTIMATE</div><h2 style="font-size:25px;margin-top:5px">Grenade cost calculator</h2></div><span class="tag" id="grenadeRecipeStatus">CUSTOM RECIPE</span></div>
 <p class="small">Enter the in-game chemicals and volume used for one grenade. Ingredient prices use the cheaper buy-or-craft price from the registry.</p>
 <div class="fields" style="margin-top:20px">
 <div><label for="grenadeName">Grenade name</label><input id="grenadeName" type="text" placeholder="e.g. Chemical grenade" oninput="markGrenadeCustom();renderGrenadeCost()"></div>
@@ -781,20 +781,30 @@ const savedGrenadeRecipes={
  "red-phos":{name:"Red Phos grenade",chemical:"Red Phosphorus"}
 };
 let loadingGrenadePreset=false;
-function markGrenadeCustom(){if(!loadingGrenadePreset&&grenadePreset)grenadePreset.value="";}
+function updateGrenadePresetStatus(){
+ const status=document.getElementById("grenadeRecipeStatus");
+ if(status)status.textContent=savedGrenadeRecipes[grenadePreset.value]?"SAVED RECIPE":"CUSTOM RECIPE";
+}
+function markGrenadeCustom(){
+ if(!loadingGrenadePreset&&grenadePreset){
+  grenadePreset.value="";
+  updateGrenadePresetStatus();
+ }
+}
 function initGrenadeCalculator(){
  if(!grenadeIngredients)return;
  if(!grenadeIngredients.children.length)loadGrenadePreset();
 }
 function loadGrenadePreset(){
  const preset=savedGrenadeRecipes[grenadePreset.value];
- if(!preset)return;
+ if(!preset){updateGrenadePresetStatus();return;}
  loadingGrenadePreset=true;
  grenadeName.value=preset.name;
  grenadeIngredients.replaceChildren();
  addGrenadeIngredient(preset.chemical,4.4);
  addGrenadeIngredient("Citizol-Q",2.2);
  loadingGrenadePreset=false;
+ updateGrenadePresetStatus();
 }
 function addGrenadeIngredient(name="",amount="",customName=""){
  const row=document.createElement("div");
