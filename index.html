@@ -56,7 +56,7 @@
 <p class="small">Enter the in-game chemicals and volume used for one grenade. Ingredient prices use the cheaper buy-or-craft price from the registry.</p>
 <div class="fields" style="margin-top:20px">
 <div><label for="grenadeName">Grenade name</label><input id="grenadeName" type="text" placeholder="e.g. Chemical grenade" oninput="markGrenadeCustom();renderGrenadeCost()"></div>
-<div><label for="grenadePreset">Load saved recipe</label><select id="grenadePreset" onchange="loadGrenadePreset()"><option value="">Custom recipe</option><option value="2-chloro" selected>2-Chloro</option><option value="cyanogen-chloride">Cyanogen Chloride</option><option value="amn-a">AMN-A</option><option value="red-phos">Red Phos</option></select></div>
+<div><label for="grenadePreset">Load saved recipe</label><select id="grenadePreset" onchange="loadGrenadePreset()"><option value="">Custom recipe</option><option value="2-chloro" selected>2-Chloro</option><option value="cyanogen-chloride">Cyanogen Chloride</option><option value="amnesium">Amnesium</option><option value="amn-a">AMN-A</option><option value="amn-b">AMN-B</option><option value="amn-c">AMN-C</option><option value="amn-d">AMN-D</option><option value="amn-e">AMN-E</option><option value="red-phos">Red Phos</option></select></div>
 <div><label for="grenadeCount">Grenades in batch</label><input id="grenadeCount" type="number" min="1" step="1" value="1" oninput="renderGrenadeCost()"></div>
 <div><label for="grenadeSalePrice">Selling price per grenade ($)</label><input id="grenadeSalePrice" type="number" min="0" step="0.01" placeholder="Optional" oninput="renderGrenadeCost()"></div>
 </div>
@@ -795,7 +795,12 @@ function grenadeChemicalOptions(selected=""){
 const savedGrenadeRecipes={
  "2-chloro":{name:"2-Chloro grenade",chemical:"2-Chlorobenzylidenemalononitrile",amount:4.3},
  "cyanogen-chloride":{name:"Cyanogen Chloride grenade",chemical:"Cyanogen Chloride",amount:4.3},
+ "amnesium":{name:"Amnesium grenade",chemical:"Amnesium",amount:4.3},
  "amn-a":{name:"AMN-A grenade",chemical:"AMN-A103",amount:4.3},
+ "amn-b":{name:"AMN-B grenade",chemical:"AMN-B112",amount:4.3},
+ "amn-c":{name:"AMN-C grenade",chemical:"AMN-C227",amount:4.3},
+ "amn-d":{name:"AMN-D grenade",chemical:"AMN-D045",amount:4.3},
+ "amn-e":{name:"AMN-E grenade",chemical:"AMN-E269",amount:4.3},
  "red-phos":{name:"Red Phos grenade",chemical:"Red Phosphorus",amount:4.3}
 };
 let loadingGrenadePreset=false;
