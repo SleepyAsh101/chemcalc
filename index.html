@@ -890,16 +890,16 @@ function renderGrenadeCost(){
 
 function sampleSourcesFrom(acquisition){
  if(!/samples?/i.test(acquisition||""))return [];
- if(/SCP-939\\s+19\\s*\\/\\s*53/i.test(acquisition))return ["SCP-939-19","SCP-939-53"];
- return acquisition.replace(/\\s*\\([^)]*\\)/g,"").split(/\\s*\\/\\s*|\\s+or\\s+/i).map(part=>{
-  let token=part.replace(/\\b(?:victim\\s+)?samples?\\b/gi,"").trim().replace(/\\s+/g," ");
+ if(/SCP-939\s+19\s*\/\s*53/i.test(acquisition))return ["SCP-939-19","SCP-939-53"];
+ return acquisition.replace(/\s*\([^)]*\)/g,"").split(/\s*\/\s*|\s+or\s+/i).map(part=>{
+  let token=part.replace(/\b(?:victim\s+)?samples?\b/gi,"").trim().replace(/\s+/g," ");
   if(!token)return null;
-  if(/^SCP[-\\s]?/i.test(token)){
-   token=token.replace(/^SCP[-\\s]?/i,"").replace(/s$/i,"").replace(/\\s+/g,"-");
+  if(/^SCP[-\s]?/i.test(token)){
+   token=token.replace(/^SCP[-\s]?/i,"").replace(/s$/i,"").replace(/\s+/g,"-");
    return "SCP-"+token;
   }
-  if(/^\\d{3,5}(?:-\\d+)*$/.test(token))return "SCP-"+token;
-  if(/^TYPE[-\\s]?GREEN$/i.test(token))return "Type Green";
+  if(/^\d{3,5}(?:-\d+)*$/.test(token))return "SCP-"+token;
+  if(/^TYPE[-\s]?GREEN$/i.test(token))return "Type Green";
   return null;
  }).filter(Boolean);
 }
