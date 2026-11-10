@@ -909,6 +909,7 @@ function renderSCPSamples(){
   for(let source of sampleSourcesFrom(info.acquisition)){
    if(source==="SCP-008-02")source="SCP-008-2";
    if(source==="SCP-9000"||source==="SCP-9000-A-2")source="SCP-9000-A/B";
+   if(/^SCP-22415-[123]$/.test(source))source="SCP-22415-1/2/3";
    if(!grouped.has(source))grouped.set(source,[]);
    const samples=grouped.get(source);
    if(!samples.some(name=>name.toLowerCase()===chemical.toLowerCase()))samples.push(chemical);
@@ -919,6 +920,7 @@ function renderSCPSamples(){
  grouped.set("SCP-939",["SCP-939 Saliva","Amnesium"]);
  grouped.set("SCP-008-2",["SCP-008-2 Blood","Radioactive Fluid"]);
  grouped.set("SCP-9000-A/B",["Radioactive Fluid","SCP-9000 Infectious Sample"]);
+ grouped.set("SCP-22415-1/2/3",["Unstable Exotic Matter"]);
  const records=[...grouped.entries()].map(([source,samples])=>({source,samples:samples.join(" / ")}))
   .sort((a,b)=>a.source.localeCompare(b.source,undefined,{numeric:true}));
  const filtered=records.filter(row=>(row.source+" "+row.samples).toLowerCase().includes(query));
