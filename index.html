@@ -889,9 +889,9 @@ function renderGrenadeCost(){
 }
 
 function sampleSourcesFrom(acquisition){
- if(!/samples?/i.test(acquisition||""))return [];
- if(/SCP-939\s+19\s*\/\s*53/i.test(acquisition))return ["SCP-939-19","SCP-939-53"];
- return acquisition.replace(/\s*\([^)]*\)/g,"").split(/\s*\/\s*|\s+or\s+/i).map(part=>{
+ if(!/\bsamples?\s*$/i.test(acquisition||""))return [];
+ if(/SCP-939\s+19\s*\/\s*53\s+Samples?$/i.test(acquisition))return ["SCP-939"];
+ return acquisition.split(/\s*\/\s*|\s+or\s+/i).map(part=>{
   let token=part.replace(/\b(?:victim\s+)?samples?\b/gi,"").trim().replace(/\s+/g," ");
   if(!token)return null;
   if(/^SCP[-\s]?/i.test(token)){
@@ -904,22 +904,26 @@ function sampleSourcesFrom(acquisition){
  }).filter(Boolean);
 }
 function renderSCPSamples(){
- const query=scpSampleSearch.value.trim().toLowerCase(),records=[],seen=new Set();
+ const query=scpSampleSearch.value.trim().toLowerCase(),grouped=new Map();
  for(const [chemical,info] of Object.entries(chemicalReference)){
   for(const source of sampleSourcesFrom(info.acquisition)){
-   const key=source.toLowerCase()+"|"+chemical.toLowerCase();
-   if(seen.has(key))continue;seen.add(key);
-   records.push({source,chemical});
+   if(!grouped.has(source))grouped.set(source,[]);
+   const samples=grouped.get(source);
+   if(!samples.some(name=>name.toLowerCase()===chemical.toLowerCase()))samples.push(chemical);
   }
  }
- records.sort((a,b)=>a.source.localeCompare(b.source,undefined,{numeric:true})||a.chemical.localeCompare(b.chemical,undefined,{numeric:true}));
- const filtered=records.filter(row=>(row.source+" "+row.chemical).toLowerCase().includes(query));
- scpSampleCount.textContent=filtered.length+" LISTED SAMPLES";
+ // These are the confirmed paired outputs supplied for this game’s sample system.
+ grouped.set("Type Green",["Toxic Blood","Unstable Quantum Matter"]);
+ grouped.set("SCP-939",["SCP-939 Saliva","Amnesium"]);
+ const records=[...grouped.entries()].map(([source,samples])=>({source,samples:samples.join(" / ")}))
+  .sort((a,b)=>a.source.localeCompare(b.source,undefined,{numeric:true}));
+ const filtered=records.filter(row=>(row.source+" "+row.samples).toLowerCase().includes(query));
+ scpSampleCount.textContent=filtered.length+" LISTED SOURCES";
  scpSampleTable.replaceChildren();
  const head=scpSampleTable.createTHead().insertRow();
- for(const label of ["Source SCP","Sample chemical"]){const th=document.createElement("th");th.textContent=label;head.append(th);}
+ for(const label of ["Source SCP / Type","Sample(s)"]){const th=document.createElement("th");th.textContent=label;head.append(th);}
  const body=scpSampleTable.createTBody();
- for(const row of filtered){const tr=body.insertRow();const source=tr.insertCell(),sample=tr.insertCell();source.textContent=row.source;sample.textContent=row.chemical;}
+ for(const row of filtered){const tr=body.insertRow();const source=tr.insertCell(),samples=tr.insertCell();source.textContent=row.source;samples.textContent=row.samples;}
  if(!filtered.length){const tr=body.insertRow(),td=tr.insertCell();td.colSpan=2;td.className="small";td.textContent=query?"No SCP samples match your search.":"No SCP sample sources are recorded yet.";}
 }
 function switchWorkspace(view){
