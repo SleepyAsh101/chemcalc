@@ -906,15 +906,19 @@ function sampleSourcesFrom(acquisition){
 function renderSCPSamples(){
  const query=scpSampleSearch.value.trim().toLowerCase(),grouped=new Map();
  for(const [chemical,info] of Object.entries(chemicalReference)){
-  for(const source of sampleSourcesFrom(info.acquisition)){
+  for(let source of sampleSourcesFrom(info.acquisition)){
+   if(source==="SCP-008-02")source="SCP-008-2";
+   if(source==="SCP-9000"||source==="SCP-9000-A-2")source="SCP-9000-A/B";
    if(!grouped.has(source))grouped.set(source,[]);
    const samples=grouped.get(source);
    if(!samples.some(name=>name.toLowerCase()===chemical.toLowerCase()))samples.push(chemical);
   }
  }
- // These are the confirmed paired outputs supplied for this game’s sample system.
+ // Confirmed sample-output groupings.
  grouped.set("Type Green",["Toxic Blood","Unstable Quantum Matter"]);
  grouped.set("SCP-939",["SCP-939 Saliva","Amnesium"]);
+ grouped.set("SCP-008-2",["SCP-008-2 Blood","Radioactive Fluid"]);
+ grouped.set("SCP-9000-A/B",["Radioactive Fluid","SCP-9000 Infectious Sample"]);
  const records=[...grouped.entries()].map(([source,samples])=>({source,samples:samples.join(" / ")}))
   .sort((a,b)=>a.source.localeCompare(b.source,undefined,{numeric:true}));
  const filtered=records.filter(row=>(row.source+" "+row.samples).toLowerCase().includes(query));
