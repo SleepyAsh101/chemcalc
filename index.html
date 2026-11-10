@@ -1002,6 +1002,7 @@ function renderSalesQuote(){
   salesOutput.innerHTML='<b>'+escapeHTML(error.message)+'</b>'+revenue;
  }
 }
+Object.assign(chemicalReference,{"Unstable Exotic Matter":{"acquisition":"SCP-22415-1 / SCP-22415-2 / SCP-22415-3 Samples","effects":"","notes":"","unstable":true}});
 function referenceInfo(name){
  return chemicalReference[name]||Object.entries(chemicalReference).find(([n])=>canonicalName(n)===canonicalName(name))?.[1]||{};
 }
