@@ -33,7 +33,7 @@
 <div style="margin-top:14px"><label for="rMethod">Crafting method</label><select disabled id="rMethod"><option value="">Unspecified</option><option>Beaker</option><option>Vacuum</option><option>Fire</option><option>Centrifuge</option></select></div><datalist id="chemList"></datalist><div class="actions"><button class="primary" onclick="calculate()">Calculate batch ↗</button><button id="editRecipeButton" onclick="toggleRecipeEditing()">Edit recipe</button><button id="saveRecipeButton" hidden onclick="saveRecipeDraft()">Save recipe draft</button></div><div id="output" class="result" aria-live="polite"></div><div id="builderNotice" class="small notice" aria-live="polite"></div></section>
 <div><section class="box"><div class="panel-head"><h2><span class="number">02</span>Recipe archive</h2><span class="tag" id="recipeCount"></span></div><label for="savedRecipes">Saved formula</label><div class="toolbar"><select id="savedRecipes"></select><button onclick="loadRecipe()">Load</button></div><div id="recipeVariantControl" hidden style="margin-top:14px"><label for="recipeVariantSelect">Unstable Liquid Reality recipe route</label><select id="recipeVariantSelect" onchange="selectRecipeVariant()"></select><p class="small" style="margin-top:7px">The selected route updates this chemical’s cost and downstream recipe estimates.</p></div><div class="divider"></div><div class="actions"><button onclick="exportRecipes()">↓ Export JSON</button><button type="button" onclick="resetBrowserDrafts('recipes')">Reset recipe drafts</button></div><p class="small" style="margin-top:13px">Temporary recipe editing is enabled. Drafts save in this browser; export JSON and send it to @noway2887 to update the shared site. Base and sample prices can be tested in the chemical registry.</p></section>
 <section class="box"><div class="panel-head"><h2><span class="number">03</span>Batch requirements</h2></div><p class="small" style="margin-bottom:18px">See the ingredients needed and choose to buy or make each refined chemical based on its lower cost.</p><div class="req-fields"><div><label for="reqRecipe">Output recipe</label><select id="reqRecipe"></select></div><div><label for="reqAmount">Target output (L)</label><input id="reqAmount" type="number" step="0.01" placeholder="1.00"></div></div><div class="actions"><button onclick="showRequirements()">Show requirements ↗</button></div><div id="reqOutput" class="result small" aria-live="polite">Choose a formula and enter your target volume.</div></section></div>
-<div class="full"><button id="registryToggle" aria-expanded="false" aria-controls="chemicalRegistry" onclick="toggleRegistry()" style="margin-bottom:18px">Show chemical registry / edit prices</button></div><section id="chemicalRegistry" class="box full" hidden><div class="panel-head"><h2><span class="number">04</span>Chemical registry <span class="small" id="chemicalCount"></span></h2><input class="search" id="chemicalSearch" aria-label="Search chemical registry" placeholder="Search chemicals…" oninput="filterChemicals()"></div><p class="small">Temporary price testing: edit base and sample prices below. Changes save in this browser and update crafting costs.</p><label style="margin-top:14px;display:flex;align-items:center;gap:9px"><input id="editablePricesOnly" type="checkbox" style="width:auto" onchange="filterChemicals()">Editable prices only</label><div class="table-scroll"><table id="chemTable"></table></div><div class="actions"><button type="button" onclick="resetBrowserDrafts('prices')">Reset test prices</button></div></section>
+<div class="full"><button id="registryToggle" aria-expanded="false" aria-controls="chemicalRegistry" onclick="toggleRegistry()" style="margin-bottom:18px">Show chemical registry / edit prices</button></div><section id="chemicalRegistry" class="box full" hidden><div class="panel-head"><h2><span class="number">04</span>Chemical registry <span class="small" id="chemicalCount"></span></h2><input class="search" id="chemicalSearch" aria-label="Search chemical registry" placeholder="Search chemicals…" oninput="filterChemicals()"></div><p class="small">Toggle between calculated crafting costs and player/chemist buying prices. Buying-price edits are saved in this browser and update estimates.</p><div style="max-width:260px;margin-top:14px"><label for="chemicalPriceMode">Price shown on list</label><select id="chemicalPriceMode" onchange="renderChemTable()"><option value="craft">Crafting cost</option><option value="buy">Buying price</option></select></div><label style="margin-top:14px;display:flex;align-items:center;gap:9px"><input id="editablePricesOnly" type="checkbox" style="width:auto" onchange="filterChemicals()">Editable prices only</label><div class="table-scroll"><table id="chemTable"></table></div><div class="actions"><button type="button" onclick="resetBrowserDrafts('prices')">Reset test prices</button></div></section>
 </main>
 <section id="referenceView" hidden role="tabpanel" aria-labelledby="referenceTab" class="box">
 <div class="panel-head"><div><div class="eyebrow">SCP-RP · CHEMICAL FIELD GUIDE</div><h2 style="font-size:25px;margin-top:5px">Chemistry sheet</h2></div><span class="tag" id="referenceCount"></span></div>
@@ -1110,14 +1110,27 @@ function filterChemicals(){
 }
 
 function escapeHTML(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function calcCraftPrice(name,stack=[]){
+  name=canonicalName(name);
+  if(stack.includes(name))return null;
+  const r=recipes[name];
+  if(!r||!(r.y>0&&r.y<=1&&r.la>0&&r.lb>0))return null;
+  const next=[...stack,name],a=calcRecipePrice(r.a,next),b=calcRecipePrice(r.b,next);
+  if(a==null||b==null||!Number.isFinite(a)||!Number.isFinite(b))return null;
+  return +((r.la*a+r.lb*b)/((r.la+r.lb)*r.y)).toFixed(2);
+}
 function renderChemTable(){
-  let h="<tr><th>Name</th><th>$/L</th><th></th></tr>";
+  const mode=document.getElementById("chemicalPriceMode")?.value||"craft";
+  const buying=mode==="buy";
+  let h="<tr><th>Name</th><th>"+(buying?"Buying $/L":"Crafting $/L")+"</th><th>Price type</th></tr>";
   for(const c of Object.keys(chemicals).sort()){
-    const key=escapeHTML(JSON.stringify(c)), label=escapeHTML(c), value=chemicals[c];
-    h+=`<tr><td>${label}${recipes[c]?'<br><span class="small">Calculated recipe cost</span>':''}</td><td>`;
-    if(recipes[c])h+=value==null?'<span class="small">Needs recipe data</span>':Number(value).toLocaleString(undefined,{maximumFractionDigits:2});
-    else h+='<input type="number" min="0" step="any" aria-label="Price per liter for '+label+'" value="'+(value??'')+'" placeholder="Set price" onchange="updateTestPrice('+key+',this.value)">';
-    h+="</td><td><span class=\"small\">"+(recipes[c]?"Calculated":"Browser test price")+"</span></td></tr>";
+    const key=escapeHTML(JSON.stringify(c)),label=escapeHTML(c);
+    const value=buying?chemistPrices[c]:(recipes[c]?calcCraftPrice(c):chemistPrices[c]);
+    const input='<input type="number" min="0" step="any" aria-label="'+(buying?"Buying price":"Base price")+' per liter for '+label+'" value="'+(value==null?"":escapeHTML(String(value)))+'" placeholder="'+(buying?"Set buy price":"Set price")+'" onchange="updateTestPrice('+key+',this.value)">';
+    h+='<tr><td>'+label+'<br><span class="small">'+(buying?(value==null?"No buying price set":"Player / chemist buying price"):(recipes[c]?"Calculated crafting cost":"Base / sample price"))+'</span></td><td>';
+    if(buying||!recipes[c])h+=input;
+    else h+=value==null?'<span class="small">Needs recipe data</span>':Number(value).toLocaleString(undefined,{maximumFractionDigits:2});
+    h+="</td><td><span class=\"small\">"+(buying?"Buying price":recipes[c]?"Crafting estimate":"Base / sample")+"</span></td></tr>";
   }
   chemTable.innerHTML=h;filterChemicals();
 }
