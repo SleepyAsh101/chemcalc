@@ -53,7 +53,7 @@
 
 <section id="salesView" hidden role="tabpanel" aria-labelledby="salesTab" class="box">
 <div class="panel-head"><div><div class="eyebrow">SCP-RP · ORDER ESTIMATE</div><h2 style="font-size:25px;margin-top:5px">Sales quote calculator</h2></div><span class="tag">LIVE ESTIMATE</span></div>
-<p class="small">Enter the order size and your selling price per liter. The estimate uses current registry prices and chooses the cheaper buy or craft route for each ingredient.</p>
+<p class="small">Enter the order size and your selling price per liter. The estimate uses the lower-cost route, except Rubidol R-33, which uses its fixed player purchase price.</p>
 <div class="fields" style="margin-top:20px">
 <div><label for="salesRecipe">Chemical being ordered</label><select id="salesRecipe" onchange="renderSalesQuote()"></select></div>
 <div><label for="salesQuantity">Order size (L)</label><input id="salesQuantity" type="number" min="0.001" step="0.01" value="80" oninput="renderSalesQuote()"></div>
@@ -102,6 +102,12 @@ let chemicals = {
 try{
  const prices=JSON.parse(localStorage.getItem("chemcalcPriceDrafts")||"{}");
  for(const [name,value] of Object.entries(prices))if(typeof value==="number"&&Number.isFinite(value)&&value>=0)chemicals[name]=(name==="Interdimensional Matter"&&value===2000)?2500:value;
+ if(localStorage.getItem("chemcalcRubidol450Migration")!=="done"){
+  prices["Rubidol R-33"]=450;
+  localStorage.setItem("chemcalcPriceDrafts",JSON.stringify(prices));
+  chemicals["Rubidol R-33"]=450;
+  localStorage.setItem("chemcalcRubidol450Migration","done");
+ }
 }catch(e){}
 
 // Keep actual chemist/sample prices before recipe bootstrapping replaces crafted
@@ -970,7 +976,7 @@ function renderSalesQuote(){
   if(!r){if(stack.length===0)outputSource="BUY";else add(baseBuy,n,volume);return;}
   if(!(r.y>0&&r.y<=1&&r.la>0&&r.lb>0))throw Error("Missing or invalid yield/volumes for "+n+".");
   const buy=chemistPrices[n],craft=craftUnitCost(n,stack);
-  if(buy!=null&&Number.isFinite(Number(buy))&&(craft==null||Number(buy)<craft)){
+  if(buy!=null&&Number.isFinite(Number(buy))&&(n==="Rubidol R-33"||craft==null||Number(buy)<craft)){
    if(stack.length===0)outputSource="BUY";else add(refinedBuy,n,volume);
    return;
   }
@@ -1220,7 +1226,7 @@ function showRequirements(){
       if(!r){add(baseBuy,n,volume);return;}
       if(!(r.y>0&&r.y<=1&&r.la>0&&r.lb>0))throw Error("Missing or invalid yield/volumes: "+n);
       const buy=chemistPrices[n],craft=craftUnitCost(n,stack);
-      if(buy!=null&&Number.isFinite(Number(buy))&&(craft==null||Number(buy)<craft)){
+      if(buy!=null&&Number.isFinite(Number(buy))&&(n==="Rubidol R-33"||craft==null||Number(buy)<craft)){
         if(stack.length===0)outputSource="BUY";else add(refinedBuy,n,volume);
         return;
       }
@@ -1245,7 +1251,7 @@ function showRequirements(){
     const refined=[boughtRefined,madeRefined].filter(Boolean).join("<br>")||"No refined ingredients needed.";
     const outputText="Output: "+Number((target*1000).toPrecision(6)).toLocaleString()+" mL — "+outputSource+(outputSource==="BUY"?" · "+money(target*Number(chemistPrices[name])):"");
     reqOutput.innerHTML="<b>"+outputText+"</b><br><br><b>Refined Ingredients Required:</b><br>"+refined+
-      '<div class="small" style="margin-top:8px">BUY means the chemist price is lower than making it; MAKE expands into its ingredients below.</div><div class="divider"></div>'+
+      '<div class="small" style="margin-top:8px">BUY uses the listed purchase price; MAKE expands into its ingredients below.</div><div class="divider"></div>'+
       "<b>Base Components Required:</b><br>"+(baseLines||"None; all required refined ingredients are bought.")+"<br><br><b>Estimated cost using the cheaper source at each step: "+total+"</b>";
   }catch(e){reqOutput.textContent=e.message;}
 }
