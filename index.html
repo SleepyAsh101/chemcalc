@@ -53,7 +53,7 @@
 
 <section id="salesView" hidden role="tabpanel" aria-labelledby="salesTab" class="box">
 <div class="panel-head"><div><div class="eyebrow">SCP-RP · ORDER ESTIMATE</div><h2 style="font-size:25px;margin-top:5px">Sales quote calculator</h2></div><span class="tag">LIVE ESTIMATE</span></div>
-<p class="small">Enter the order size and your selling price per liter. The estimate uses the lower-cost route, except Rubidol R-33, which uses its fixed player purchase price.</p>
+<p class="small">Enter the order size and your selling price per liter. The estimate uses the lower-cost route, except Rubidol R-33 and Aminocalciol, which use their fixed player purchase prices.</p>
 <div class="fields" style="margin-top:20px">
 <div><label for="salesRecipe">Chemical being ordered</label><select id="salesRecipe" onchange="renderSalesQuote()"></select></div>
 <div><label for="salesQuantity">Order size (L)</label><input id="salesQuantity" type="number" min="0.001" step="0.01" value="80" oninput="renderSalesQuote()"></div>
@@ -83,7 +83,7 @@
 /* ===== CHEMICALS ===== */
 let chemicals = {
   "2-Napthol":250,"Acetic Anhydride":350,"Acetone":500,"AMN-A103":200,
-  "Amino Acid":300,"Amnesium":3000,"Anhydride":250,
+  "Amino Acid":300,"Aminocalciol":300,"Amnesium":3000,"Anhydride":250,
   "Anomalous Bone Marrow":3500,"Anomalous Matter":1000,"Betonine":1000,
   "Brodamide":450,"Calcium":750,"Chlorine":750,"Citizol-Q":2000,
   "Crystalline Blood":2500,"Decaying Matter":3000,"Dionized Water":150,
@@ -107,6 +107,12 @@ try{
   localStorage.setItem("chemcalcPriceDrafts",JSON.stringify(prices));
   chemicals["Rubidol R-33"]=450;
   localStorage.setItem("chemcalcRubidol450Migration","done");
+ }
+ if(localStorage.getItem("chemcalcAminocalciol300Migration")!=="done"){
+  prices["Aminocalciol"]=300;
+  localStorage.setItem("chemcalcPriceDrafts",JSON.stringify(prices));
+  chemicals["Aminocalciol"]=300;
+  localStorage.setItem("chemcalcAminocalciol300Migration","done");
  }
 }catch(e){}
 
@@ -976,7 +982,7 @@ function renderSalesQuote(){
   if(!r){if(stack.length===0)outputSource="BUY";else add(baseBuy,n,volume);return;}
   if(!(r.y>0&&r.y<=1&&r.la>0&&r.lb>0))throw Error("Missing or invalid yield/volumes for "+n+".");
   const buy=chemistPrices[n],craft=craftUnitCost(n,stack);
-  if(buy!=null&&Number.isFinite(Number(buy))&&(n==="Rubidol R-33"||craft==null||Number(buy)<craft)){
+  if(buy!=null&&Number.isFinite(Number(buy))&&((n==="Rubidol R-33"||n==="Aminocalciol")||craft==null||Number(buy)<craft)){
    if(stack.length===0)outputSource="BUY";else add(refinedBuy,n,volume);
    return;
   }
@@ -1226,7 +1232,7 @@ function showRequirements(){
       if(!r){add(baseBuy,n,volume);return;}
       if(!(r.y>0&&r.y<=1&&r.la>0&&r.lb>0))throw Error("Missing or invalid yield/volumes: "+n);
       const buy=chemistPrices[n],craft=craftUnitCost(n,stack);
-      if(buy!=null&&Number.isFinite(Number(buy))&&(n==="Rubidol R-33"||craft==null||Number(buy)<craft)){
+      if(buy!=null&&Number.isFinite(Number(buy))&&((n==="Rubidol R-33"||n==="Aminocalciol")||craft==null||Number(buy)<craft)){
         if(stack.length===0)outputSource="BUY";else add(refinedBuy,n,volume);
         return;
       }
@@ -1268,7 +1274,7 @@ function calcRecipePrice(n,stack=[]){
       if(ca.price!=null&&cb.price!=null&&Number.isFinite(ca.price)&&Number.isFinite(cb.price))
         crafted=+((r.la*ca.price+r.lb*cb.price)/((r.la+r.lb)*r.y)).toFixed(2);
     }
-    const price=name==="Rubidol R-33"&&hasBuy?+Number(buy).toFixed(2):!hasBuy?crafted:crafted==null?+Number(buy).toFixed(2):Math.min(+Number(buy).toFixed(2),crafted);
+    const price=(name==="Rubidol R-33"||name==="Aminocalciol")&&hasBuy?+Number(buy).toFixed(2):!hasBuy?crafted:crafted==null?+Number(buy).toFixed(2):Math.min(+Number(buy).toFixed(2),crafted);
     if(!cyclic)recipePriceCache.set(name,price);
     return {price,cyclic};
   }
