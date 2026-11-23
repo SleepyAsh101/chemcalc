@@ -1291,9 +1291,10 @@ function calcRecipePrice(n,stack=[]){
     if(r&&r.y>0&&r.y<=1&&r.la>0&&r.lb>0){
       const next=[...path,name],ca=calculate(r.a,next),cb=calculate(r.b,next);
       cyclic=ca.cyclic||cb.cyclic;
-      if(ca.price!=null&&cb.price!=null&&Number.isFinite(ca.price)&&Number.isFinite(cb.price))
+      if(ca.price!=null&&cb.price!=null&&Number.isFinite(ca.price)&&Number.isFinite(cb.price)){
         const remainderCredit=r.remainder?(r.remainder.liters*(r.remainder.chemical===r.a?ca.price:r.remainder.chemical===r.b?cb.price:(calculate(r.remainder.chemical,next).price||0))):0;
         crafted=+(Math.max(0,r.la*ca.price+r.lb*cb.price-remainderCredit)/((r.la+r.lb)*r.y)).toFixed(2);
+      }
     }
     const price=(name==="Rubidol R-33"||name==="Aminocalciol")&&hasBuy?+Number(buy).toFixed(2):!hasBuy?crafted:crafted==null?+Number(buy).toFixed(2):Math.min(+Number(buy).toFixed(2),crafted);
     if(!cyclic)recipePriceCache.set(name,price);
